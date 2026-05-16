@@ -178,6 +178,7 @@ Launcher flags:
   --dry-run       same as --status, then exit 0 without running codex
   --set-key       prompt for a new API token and store it
   --cost          local cost log (session / today / history)
+  --usage-watch   continuously scan ~/.codex/sessions/ into the ledger
   --help          show this help
 
 Any other argument is forwarded to the underlying \`codex\` binary.
@@ -212,6 +213,16 @@ main() {
             shift
             python3 "$INSTALL_DIR/scripts/cost-tracker.py" "$\{1:-session\}"
             exit $?
+            ;;
+        --usage-watch)
+            # tpl: foreground watcher for standalone capture
+            adapter="$SCRIPTS_DIR/usage-adapter-codex.sh"
+            if [ ! -r "$adapter" ]; then
+                fail "usage adapter not installed: $adapter"
+                exit 1
+            fi
+            export CODEX_ADAPTER_VERBOSE=1
+            exec bash "$adapter"
             ;;
     esac
 
@@ -254,6 +265,24 @@ main() {
         fail "codex binary not found in PATH."
         fail "Re-run the installer: $INSTALL_DIR/install.sh"
         exit 127
+    fi
+
+    # tpl: --- native usage adapter (Codex bypasses strip-proxy) ---
+    # tpl: Codex CLI does not honour HTTPS_PROXY consistently (#4242), so
+    # tpl: the strip-proxy is often off the wire. We spawn an adapter that
+    # tpl: tails ~/.codex/sessions/*/rollout-*.jsonl and emits canonical
+    # tpl: usage events into /tmp/${CORP_SLUG}-usage.jsonl.
+    # tpl: ADAPTER_PARENT_PID = $$ — after `exec codex`, $$ stays the same
+    # tpl: PID (it's the same process), so the adapter's watchdog kills it
+    # tpl: when codex exits. No orphan daemon.
+    local adapter="$SCRIPTS_DIR/usage-adapter-codex.sh"
+    if [ -r "$adapter" ]; then
+        ADAPTER_PARENT_PID=$$ \
+        ${CORP_SLUG_UPPER}_USAGE_LOG="$\{${CORP_SLUG_UPPER}_USAGE_LOG:-/tmp/${CORP_SLUG}-usage.jsonl\}" \
+        ${CORP_SLUG_UPPER}_SESSION_ID="$\{${CORP_SLUG_UPPER}_SESSION_ID:-\}" \
+        CODEX_HOME="$CODEX_HOME" \
+            nohup bash "$adapter" >/dev/null 2>&1 &
+        disown $! 2>/dev/null || true
     fi
 
     show_banner

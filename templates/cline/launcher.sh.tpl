@@ -322,6 +322,7 @@ Usage:
   ${CORP_SLUG} --status        Check VPN, gateway, IDE, extension, settings
   ${CORP_SLUG} --set-key       Reset / change the API token
   ${CORP_SLUG} --cost          Local cost log (session / today / history)
+  ${CORP_SLUG} --usage-watch   Continuously scan Cline task logs into the ledger
   ${CORP_SLUG} --refresh       Re-merge cline.* keys into the IDE settings
   ${CORP_SLUG} --uninstall     Run the uninstaller
 
@@ -386,6 +387,49 @@ cmd_cost() {
     python3 "$INSTALL_DIR/scripts/cost-tracker.py" "$\{1:-session\}"
 }
 
+# =====================================================================
+#  USAGE ADAPTER (native Cline log scanner)
+#
+#  Cline talks to Bedrock / Anthropic / OpenAI / Vertex directly — the
+#  strip-proxy isn't on the wire. To still feed the cost ledger we parse
+#  ui_messages.json under saoudrizwan.claude-dev/tasks/. The adapter is
+#  spawned in background by `main()` and runs a single catch-up pass +
+#  a short follow window tied to the launcher's PID via ADAPTER_PARENT_PID.
+#  `--usage-watch` runs the adapter in foreground for a continuous capture
+#  during a long IDE session.
+# =====================================================================
+ADAPTER_PID=""
+
+start_usage_adapter() {
+    local adapter="$SCRIPTS_DIR/usage-adapter-cline.sh"
+    [ -r "$adapter" ] || { vlog "usage adapter missing: $adapter" 2>/dev/null; return 0; }
+    # tpl: nohup + & → daemonised; ADAPTER_PARENT_PID tells the adapter
+    # tpl: to self-terminate when this launcher exits.
+    export ADAPTER_PARENT_PID=$$
+    export ${CORP_SLUG_UPPER}_USAGE_LOG="$\{${CORP_SLUG_UPPER}_USAGE_LOG:-/tmp/${CORP_SLUG}-usage.jsonl\}"
+    nohup bash "$adapter" >/dev/null 2>&1 &
+    ADAPTER_PID=$!
+    disown "$ADAPTER_PID" 2>/dev/null || true
+}
+
+stop_usage_adapter() {
+    [ -n "$ADAPTER_PID" ] || return 0
+    kill "$ADAPTER_PID" 2>/dev/null || true
+    ADAPTER_PID=""
+}
+
+cmd_usage_watch() {
+    show_banner
+    local adapter="$SCRIPTS_DIR/usage-adapter-cline.sh"
+    if [ ! -r "$adapter" ]; then
+        fail "usage adapter not installed: $adapter"
+        exit 1
+    fi
+    info "Watching Cline tasks/ for usage events (Ctrl-C to stop)"
+    export CLINE_ADAPTER_VERBOSE=1
+    exec bash "$adapter"
+}
+
 cmd_uninstall() {
     bash "$INSTALL_DIR/uninstall.sh"
 }
@@ -405,6 +449,7 @@ main() {
         --set-key)        setup_isolation >/dev/null 2>&1 || true; detect_vscode_family || true; cmd_set_key; exit 0 ;;
         --refresh)        cmd_refresh; exit 0 ;;
         --cost)           shift; cmd_cost "$@"; exit 0 ;;
+        --usage-watch)    setup_isolation >/dev/null 2>&1 || true; cmd_usage_watch ;;
         --uninstall)      cmd_uninstall; exit 0 ;;
     esac
 
@@ -429,6 +474,12 @@ main() {
 
     merge_cline_settings
     install_global_rules
+
+    # tpl: --- native usage adapter (Cline bypasses strip-proxy) ---
+    # tpl: Runs in background; the EXIT trap below kills it on launcher exit,
+    # tpl: and the adapter's ADAPTER_PARENT_PID watchdog covers the exec case.
+    trap stop_usage_adapter EXIT INT TERM
+    start_usage_adapter
 
     # tpl: Optional positional arg = workspace path to open. We pass it
     # tpl: through the IDE CLI rather than spawning the extension

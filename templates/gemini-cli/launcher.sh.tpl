@@ -139,6 +139,9 @@ case "$GM_BACKEND" in
 esac
 
 # --- Step 4: telemetry + privacy hard-off ------------------------------------
+# tpl: Third-party / Google telemetry stays OFF. The local OTLP file sink used
+# tpl: by the usage adapter (Step 6.5) is enabled separately and never exports
+# tpl: data off-host.
 export GEMINI_TELEMETRY_ENABLED=false
 export DO_NOT_TRACK=1
 export DISABLE_AUTOUPDATER=1
@@ -153,6 +156,21 @@ export GEMINI_MODEL="$GM_PRIMARY_MODEL"
 if ! command -v gemini >/dev/null 2>&1; then
     corp_fail "Underlying CLI engine not found. Reinstall via: $INSTALL_DIR/install.sh"
     exit 127
+fi
+
+# --- Step 6.5: usage adapter (Vertex-native cost tracking) -------------------
+# tpl: Strip-proxy intercepts Anthropic SSE only; Vertex AI speaks a different
+# tpl: protocol. We spawn a per-session adapter that tails Gemini CLI's local
+# tpl: OTLP file sink and projects api_response events into the shared
+# tpl: /tmp/${CORP_SLUG}-usage.jsonl ledger so `<launcher> --cost` works.
+if [ "${COST_TRACKING_ENABLED:-yes}" = "yes" ] \
+   && [ -x "$INSTALL_DIR/lib/usage-adapter-gemini.sh" ]; then
+    export ${CORP_SLUG_UPPER}_SESSION_ID="$\{${CORP_SLUG_UPPER}_SESSION_ID:-$(date +%s)-$$\}"
+    "$INSTALL_DIR/lib/usage-adapter-gemini.sh" >/dev/null 2>&1 &
+    ${CORP_SLUG_UPPER}_USAGE_ADAPTER_PID=$!
+    # tpl: Trap kills the tailer when the launcher (and Gemini) exit, so we
+    # tpl: never leak a background process across sessions.
+    trap 'kill "$\{${CORP_SLUG_UPPER}_USAGE_ADAPTER_PID:-0\}" 2>/dev/null || true' EXIT INT TERM
 fi
 
 corp_info "Backend: $GM_BACKEND | Model: $GM_PRIMARY_MODEL"

@@ -19,16 +19,18 @@ interview lets you opt out only if the org refuses any local ledger (rare).
 | `scripts/cost-tracker.ps1` | Windows PowerShell port (session / today / history). |
 | `scripts/pricing.json` | Pricing table: `{ "<model>": {"input_per_1m": X, "output_per_1m": Y} }`. Edit to match your contracted rates. |
 | `scripts/strip-proxy.js` | Bedrock/LiteLLM-only SSE intercept that emits one JSONL line per response. |
+| `scripts/usage-adapter-cline.sh` | Native Cline log adapter — parses `saoudrizwan.claude-dev/tasks/<task-id>/ui_messages.json` for `api_req_started` events (`tokensIn`/`tokensOut`/`cacheReads`/`cacheWrites`/`cost`). Used when Cline talks to a provider that bypasses the strip-proxy (Bedrock-direct, Anthropic-direct, etc.). |
+| `scripts/usage-adapter-codex.sh` | Native Codex log adapter — tails `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` and emits one event per `event_msg` with `payload.type == "token_count"` (using `info.last_token_usage` for per-turn deltas). Used because Codex CLI does not honour `HTTPS_PROXY` reliably (upstream issue #4242). |
 
 ## How each CLI feeds the ledger
 
 | CLI | Producer of `<slug>-usage.jsonl` | Notes |
 |---|---|---|
 | Claude Code | `strip-proxy.js` (Bedrock/LiteLLM) or empty | Strip-proxy active on Bedrock & LiteLLM only. For Anthropic-direct, the ledger stays empty — but that backend is rare in a corporate setting. |
-| Codex CLI | `strip-proxy.js` (LiteLLM) | LiteLLM is the standard backend; strip-proxy intercepts all responses. |
-| Gemini CLI | (none in v0.7) | Vertex AI does not stream usage in a format the proxy parses cleanly. `--cost` works against pre-recorded entries; a Vertex-native adapter is on the v0.8 list. |
+| Codex CLI | Native adapter (`usage-adapter-codex.sh`) + strip-proxy fallback | Codex (Rust/reqwest) doesn't honour `HTTPS_PROXY` reliably (#4242), so the adapter tails `~/.codex/sessions/**/rollout-*.jsonl` and emits one event per `event_msg` / `token_count`. The strip-proxy still catches the rare LiteLLM-direct case. See "Codex native adapter" below. |
+| Gemini CLI | `usage-adapter-gemini.sh` (Vertex + AI Studio) | Tails Gemini CLI's local OpenTelemetry file sink and projects `gemini_cli.api_response` events into the shared JSONL ledger. See "Vertex AI" section below. |
 | Aider | LiteLLM | Same path as Codex. |
-| Cline | Strip-proxy (LiteLLM) | Cline talks to LiteLLM via OpenAI-compatible client. |
+| Cline | Native adapter (`usage-adapter-cline.sh`) + strip-proxy fallback | Parses every `api_req_started` event under `<globalStorage>/saoudrizwan.claude-dev/tasks/<task-id>/ui_messages.json`. Strip-proxy still captures the LiteLLM-via-OpenAI-compatible setup. See "Cline native adapter" below. |
 | Continue.dev | Strip-proxy (LiteLLM) | Same. |
 | opencode | Strip-proxy | Same. |
 
@@ -94,10 +96,190 @@ installs (for forensic recovery if the policy is reverted) but the launcher's
 `--cost` flag becomes a no-op. Strongly discouraged: tenants without cost data
 forfeit the FinOps argument for budget renewal.
 
-## v0.8 roadmap
+## Vertex AI
 
-- Vertex AI native adapter (parse `gemini-cli` JSON logs)
-- Cline-native usage capture (read `~/.cline/conversations/*.json`)
-- Codex session log parser as fallback when strip-proxy is off
-- PowerShell parity for `push` + alert threshold
-- Per-team rollup endpoint (push N tenants → one aggregated record)
+The shared `strip-proxy.js` only understands Anthropic-style SSE. Vertex AI
+exposes a different protocol (`StreamGenerateContent` / Cloud AI Platform
+gRPC-JSON) that the proxy cannot decode without a full rewrite. Rather than
+fork the proxy, Gemini gets a dedicated adapter:
+`templates/shared/usage-adapter-gemini.sh.tpl` is installed at
+`<install-dir>/lib/usage-adapter-gemini.sh` and spawned in the background by
+the Gemini launcher just before `exec gemini`. The launcher traps
+`EXIT INT TERM` so the tailer dies with the session — no leftover process.
+
+**How it captures usage.** Gemini CLI ships with native OpenTelemetry. The
+adapter rewrites `~/.gemini/settings.json` on each start to force:
+
+```json
+{
+  "telemetry": {
+    "enabled": true,
+    "target": "local",
+    "outfile": "~/.gemini/telemetry.log"
+  }
+}
+```
+
+`target=local` + `outfile` keeps OTLP data on the host — no GCP export, no
+otlpEndpoint. The adapter then runs `tail -F` on that file, filters for
+`gemini_cli.api_response` log records, and projects them into the canonical
+ledger schema:
+
+| OTLP attribute | Ledger field |
+|---|---|
+| `model` (or `gen_ai.request.model`) | `model` |
+| `input_token_count` (or `gen_ai.usage.input_tokens`) | `usage.input_tokens` |
+| `output_token_count` (or `gen_ai.usage.output_tokens`) | `usage.output_tokens` |
+| `session.id` | `session` |
+
+These counts come from Vertex's own `usageMetadata`, surfaced verbatim by
+gemini-cli — so this is a **real measurement, not an estimate**. Cost is
+computed locally using an inline pricing table that mirrors `pricing.json`
+(edit both when your contracted rates change).
+
+**Known limits.**
+
+- Requires gemini-cli ≥ v0.2.x (when the OTLP file sink shipped). Older
+  versions silently produce no log lines; the adapter writes nothing and
+  `--cost` stays empty.
+- Cache-hit and "thinking" tokens are billed at the input rate in the inline
+  pricing table. If your Vertex contract bills them separately, extend the
+  `PRICING` map in `usage-adapter-gemini.sh.tpl` and update `pricing.json`.
+- The adapter parses one record per line. Multi-line pretty-printed OTLP
+  exports (rare; not the default) are not handled — keep the default sink
+  format.
+- AI Studio mode also works: the same `gemini_cli.api_response` event is
+  emitted regardless of backend.
+
+## Cline native adapter
+
+Cline (extension id `saoudrizwan.claude-dev`) stores per-task state under
+the IDE's globalStorage directory:
+
+| OS | Path |
+|---|---|
+| macOS | `~/Library/Application Support/{Code,Code - Insiders,Cursor,VSCodium}/User/globalStorage/saoudrizwan.claude-dev/tasks/<task-id>/` |
+| Linux | `~/.config/{Code,Code - Insiders,Cursor,VSCodium}/User/globalStorage/saoudrizwan.claude-dev/tasks/<task-id>/` |
+| Windows | `%APPDATA%\{Code,Cursor}\User\globalStorage\saoudrizwan.claude-dev\tasks\<task-id>\` |
+
+Each task folder contains `ui_messages.json`. The adapter pulls events
+matching `type == "say"` and `say == "api_req_started"` whose `.text` is
+a JSON-stringified `ClineApiReqInfo`:
+
+```jsonc
+// one entry inside ui_messages.json
+{ "type": "say", "say": "api_req_started", "ts": 1714477215321,
+  "text": "{\"cost\":0.012,\"tokensIn\":1284,\"tokensOut\":312,
+            \"cacheReads\":256,\"cacheWrites\":40,
+            \"apiProtocol\":\"anthropic\"}" }
+```
+
+Model id comes from `task_metadata.json`. Idempotency is enforced by
+`/tmp/<slug>-cline-seen.txt`, keyed on `<task-id>:<ts-ms>`. The launcher
+spawns the adapter in background on `<launcher>` invocation and kills it
+via an `EXIT INT TERM` trap; for a long IDE session run
+`<launcher> --usage-watch` in a spare terminal.
+
+**Known limits.**
+
+- Requires `jq` + `python3` (already required by `cost-tracker.py`).
+- If `task_metadata.json` predates the recognised schema, model id is
+  recorded as `"unknown"` — usage and cost are still captured, but
+  per-model breakdowns lose that row.
+- Cost is recomputed from `pricing.json` when a match is found; Cline's
+  own embedded `cost` (list price) is the fallback so the ledger is
+  never empty.
+
+## Codex native adapter
+
+Codex CLI writes a full session rollout under
+`~/.codex/sessions/YYYY/MM/DD/rollout-<iso-ts>-<session-uuid>.jsonl`.
+Per-turn token counts arrive as:
+
+```jsonc
+{"timestamp": "2026-04-30T11:30:13.473Z",
+ "type": "event_msg",
+ "payload": {
+   "type": "token_count",
+   "info": {
+     "total_token_usage": { /* cumulative */ },
+     "last_token_usage":  { "input_tokens": 17476,
+                            "cached_input_tokens": 6528,
+                            "output_tokens": 295,
+                            "reasoning_output_tokens": 51,
+                            "total_tokens": 17771 },
+     "model_context_window": 258400
+   }
+ }}
+```
+
+Model id is captured from the preceding `turn_context` event's
+`payload.model`. The adapter emits one ledger entry per `token_count`
+using `info.last_token_usage` (per-turn delta) so multiple events from
+the same session don't double-count. Processed lines are recorded in
+`/tmp/<slug>-codex-seen.txt` as `<rollout-basename>:<line-no>`.
+
+The adapter is forked from the Codex launcher just before
+`exec codex "$@"`. Because `exec` reuses the same PID, the adapter's
+`ADAPTER_PARENT_PID` watchdog self-terminates as soon as codex exits —
+no orphan daemons.
+
+**Known limits.**
+
+- Sessions emitted by early-September-2025 CLI builds lacked
+  `turn_context.model`; those events are tagged `model: "unknown"`.
+- `token_count` events with `info == null` (rate-limit-only pings) are
+  intentionally skipped — they carry no usage data.
+- The adapter watches `~/.codex/sessions/` with `fswatch` (macOS),
+  `inotifywait` (Linux), or a 5-second polling fallback. Conversation
+  text, tool calls and code edits are never read — only the `timestamp`,
+  `turn_context.model` and `event_msg / token_count` shapes.
+
+## Per-team / per-org rollup
+
+For org-level FinOps that operates several launchers (e.g. one tenant per
+business unit), `scripts/cost-rollup.py` aggregates N tenants into a single
+daily record and POSTs it to a central endpoint.
+
+Two input modes:
+
+```bash
+# Mode A — mount each tenant's local JSONL ledger to a shared dir
+scripts/cost-rollup.py --from-dir /mnt/finops/tenants/ \
+                      --org "ACME Group" \
+                      --post https://finops.acme.internal/v1/llm-cost/org-rollup \
+                      --bearer "$FINOPS_TOKEN"
+
+# Mode B — each tenant ran `--cost push`, an HTTP relay archived each payload to disk
+scripts/cost-rollup.py --from-http-archive /var/lib/cost-relay/archive/ \
+                      --org "ACME Group" \
+                      --day 2026-05-16 \
+                      --post https://finops.acme.internal/v1/llm-cost/org-rollup
+```
+
+Aggregated payload shape:
+
+```json
+{
+  "org": "ACME Group",
+  "day": "2026-05-16",
+  "currency": "USD",
+  "tenants": [
+    {"tenant": "acme-copilot",  "total": 12.45, "requests": 84},
+    {"tenant": "globex-helper", "total":  3.21, "requests": 22}
+  ],
+  "grand_total": 15.66,
+  "grand_requests": 106,
+  "tenant_count": 2
+}
+```
+
+Run once a day from a central cron host (not from a developer laptop). If
+tenants use mixed currencies, the script logs a warning and totals stay
+nominal — convert at the org-side ingest, not here.
+
+## Roadmap
+
+- Vertex AI quota dashboard tie-in (read project-level token quotas)
+- OIDC-based auth on `--cost push` (replace static bearer)
+- Streaming push (websocket instead of daily POST) for orgs with realtime FinOps
