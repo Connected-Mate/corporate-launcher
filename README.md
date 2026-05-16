@@ -228,7 +228,7 @@ No. The launcher you ship is standalone — your colleagues don't need to instal
 
 ## A word from the creator
 
-Hi — I'm **Alexandre Meret** ([ConnectedMate](https://github.com/Connected-Mate)).
+Hi — I'm **[Alexandre Cormeraie](https://www.linkedin.com/in/alex-cormeraie/)** ([ConnectedMate](https://github.com/Connected-Mate) on GitHub).
 
 I built this skill because I needed it at work. My employer wouldn't authorize the public AI coding CLIs as-is, so I built an internal launcher for my team — gated VPN, corporate gateway, white-label identity, telemetry off, the works. It ran in production for a while, and after a few months I realized the pattern is generic. Every large org has the same gateway, the same cyber rules, the same need to re-brand. The work is mostly the same; only the names change.
 
