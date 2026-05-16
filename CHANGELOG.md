@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-05-16
+
+### Added — five-feature audit-grade pass
+- **API probe** (Phase 1.5): `scripts/api-probe.py` validates the gateway URL, lists available models, captures TLS cert info, masks the token. Called automatically during install.
+- **Load testing** (`scripts/load-test.py`): p50/p95/p99 latency + req/sec + token throughput against the configured gateway. Opt-in via `LOAD_TEST_ENABLED`.
+- **Self-audit launcher** (Phase 3.5): `scripts/audit-launcher.py` runs 30+ rules from `scripts/audit-rules.json` against the rendered launcher (no vendor URLs, no plain secrets, VPN check present, telemetry kill switches set, FORBIDDEN_TERMS appear only in BRANDING.md, etc.). Produces a markdown + JSON report.
+- **URL purge** (Phase 3.6): `scripts/url-purge.py` + `templates/shared/url-purge-list.json` (123 blocked domains, 29 patterns) scan the launcher for vendor endpoint leaks outside the explicit deny lists. `--patch` mode rewrites violations.
+- **Compliance Word doc** (Phase 4.5): `scripts/build-compliance-docx.py` produces a 10-section .docx ready to send to RSSI/CISO/DPO. Sections: executive summary, threat model, cyber controls, network perimeter, data classification, telemetry posture, audit log, offboarding, sign-off.
+- **Pixel-art banner** (Phase 3.7): `scripts/pixel-art-logo.py` generates a branded ASCII banner in 6 styles (block, slant, mini, pixel, vintage, tech, auto). Embedded font for offline use. Each launcher's startup screen now carries its own pixel-art identity.
+- **"Made for friends · Made from France with ❤️"** footer in README, BRANDING, cyber-rules, banner.
+
+### New tests
+- `tests/test_api_probe.py`
+- `tests/test_audit_launcher.py`
+- `tests/test_compliance_docx.py`
+- `tests/test_pixel_art.py`
+- `tests/test_url_purge.py`
+- `tests/test_load_test.py`
+
+### New references
+- `references/api-probe.md`
+- `references/self-audit.md`
+- `references/compliance-docx.md`
+- `references/pixel-art-logo.md`
+- `references/url-purge.md`
+- `references/load-testing.md`
+
+### Changed
+- `scripts/generate.py` orchestration extended with Phases 1.5 / 3.5 / 3.6 / 3.7 / 4.5
+- SKILL.md workflow now documents the 5 new phases
+- references/interview-flow.md gained ~10 new opt-in/opt-out variables in Sections 4, 5, 6, 8.5
+- README.md: new "Quality & testing" section now includes audit + compliance commands
+
+### Note
+This release moves the skill from "produces a working launcher" to "produces an audit-ready launcher". The self-audit + compliance docx are the difference between a developer-grade tool and an enterprise-grade tool.
+
 ## [0.4.0] — 2026-05-16
 
 ### Added

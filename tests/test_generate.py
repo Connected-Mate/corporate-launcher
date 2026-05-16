@@ -135,6 +135,20 @@ def _minimal_config(**overrides: Any) -> dict[str, Any]:
         "DIST_ONELINER_HOST": "",
         "DIST_SIGN_RELEASE": False,
         "DIST_GPG_KEY_ID": "",
+        "VPN_PROFILE_NAME": "acme-vpn",
+        "VPN_CLIENT_NAME": "Acme VPN",
+        # v0.5 feature flags — fixtures default to "no" to keep tests fast
+        # and side-effect free. Individual tests opt-in via overrides.
+        "API_PROBE_ENABLED": "no",
+        "BANNER_GENERATE": "no",
+        "COMPLIANCE_DOCX": "no",
+        "CYBER_REVIEW_REQUIRED": "no",
+        "DPO_REVIEW_REQUIRED": "no",
+        "LOAD_TEST_ENABLED": "no",
+        "LOAD_TEST_CONCURRENCY": "1",
+        "LOAD_TEST_TOTAL": "1",
+        "SELF_AUDIT_ENABLED": "no",
+        "URL_PURGE_AUTOPATCH": "no",
     }
     base.update(overrides)
     return base

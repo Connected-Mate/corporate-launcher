@@ -79,11 +79,16 @@ def render_file(src: Path, dst: Path, ctx: Mapping[str, object]) -> None:
         raise UnresolvedVariable(f"{src}: variable not in context: {e}") from None
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_text(out, encoding="utf-8")
-    # Preserve executable bit on shell scripts
-    if src.suffix == ".tpl" and dst.suffix in {".sh", ".py", ""}:
-        mode = os.stat(src).st_mode
-        if mode & 0o111:
-            os.chmod(dst, mode)
+    # Shell scripts, Python scripts, and the launcher binary (extensionless)
+    # MUST be executable. Templates in git often lose +x, so we force 0o755
+    # for rendered scripts. Other files inherit the source mode verbatim.
+    if src.suffix == ".tpl":
+        if dst.suffix in {".sh", ".py", ""}:
+            os.chmod(dst, 0o755)
+        else:
+            mode = os.stat(src).st_mode
+            if mode & 0o111:
+                os.chmod(dst, mode)
 
 
 def render_tree(src_dir: Path, dst_dir: Path, ctx: Mapping[str, object]) -> list[Path]:

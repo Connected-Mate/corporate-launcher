@@ -8,6 +8,8 @@
 
 *Install it once into your favorite host (Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline) — it works the same way from any of them.*
 
+*Audit-grade. Repeatable. Open.*
+
 [Why](#why) · [What it does](#what-it-does) · [Install](#install) · [How it works](#how-it-works) · [Skills bundle](#skills-bundle) · [Distribution](#distribution) · [Examples](#examples) · [FAQ](#faq) · [A word from the creator](#a-word-from-the-creator)
 
 </div>
@@ -50,23 +52,29 @@ Skill: Done. Run "acme-copilot" yourself, and share this URL with your team:
 
 ## What it does
 
-In one Claude Code session, the skill:
+In one session, the skill:
 
-1. **Asks you the questions** — identity, provider, backend, network, cyber, branding, skills bundle, distribution.
-2. **Validates** the answers, defaults the unknowns, and shows you a one-screen plan.
-3. **Generates the launcher tree** on your machine:
-   - the wrapper binary (`acme-copilot`, your name, your slug)
-   - the install + uninstall scripts
-   - the white-label system prompt (BRANDING.md)
-   - the 15-control cyber rules
-   - the CLI's native config (`settings.json` / `config.toml` / `config.yaml`)
-   - the shared modules: VPN check, proxy detection, secret storage, cost tracker, prompt filter, strip-proxy (when needed)
-   - the **bundled skills** (design pack, custom skills, MCP servers) you chose for your team
-4. **Wires the shell** with an idempotent `# >>> name >>>` block.
-5. **Stores the token** in the OS keychain (macOS Keychain / Windows Credential Manager / Linux libsecret), with `chmod 600` fallback.
-6. **Generates the distribution kit** — git repo scaffold, install one-liner, or tarball — so you can hand the launcher to your team without re-running the skill yourself.
+1. **Asks you the questions** — identity, provider, backend, network, cyber, branding, skills bundle, compliance posture, distribution.
 
-Nothing is irreversible. The uninstaller restores every file and the shell RC from backup.
+2. **Probes the gateway** — verifies the URL is reachable, lists available models, validates auth, captures TLS cert info. Catches typos and expired tokens before generating anything.
+
+3. **Validates** the answers, defaults the unknowns, shows you a one-screen plan.
+
+4. **Generates the launcher tree** on your machine: wrapper binary, install + uninstall, BRANDING.md, 15-control cyber rules, CLI-native config, shared modules, bundled skills.
+
+5. **Self-audits the generated launcher** — runs 30+ rules across the rendered tree (no vendor URLs, no plain secrets, VPN check present, telemetry kill switches set, FORBIDDEN_TERMS appear only in BRANDING.md). Presents findings P0/P1/P2.
+
+6. **Sweeps for leaked vendor URLs** — defense in depth: catches any reference to api.anthropic.com / api.openai.com / etc. outside the explicit deny lists. Optional auto-patch.
+
+7. **Renders a pixel-art banner** in your brand color — each launcher starts up with its own ASCII identity. 6 styles available, auto-pick based on terminal width.
+
+8. **Wires the shell** with an idempotent block. Stores the token in the OS keychain.
+
+9. **Generates the distribution kit** — git repo scaffold, install one-liner, or tarball + checksum.
+
+10. **Produces a compliance .docx** — a 10-section Word document ready to send to your RSSI/CISO/DPO. Architecture, threat model, cyber controls, network perimeter, audit log, offboarding, sign-off section pre-filled.
+
+Nothing is irreversible. The uninstaller restores every file. Made for friends · Made from France with ❤️.
 
 ---
 
@@ -221,7 +229,7 @@ Each file contains the JSON config + a "why those choices" commentary. Reading t
 
 ## Quality & testing
 
-Every change to the skill is exercised by a five-stage local pipeline. Run any of them on demand:
+Every change to the skill is exercised by a multi-stage local pipeline, plus a suite of v0.5 tools you can run against any generated launcher. Run any of them on demand:
 
 ```bash
 bash scripts/smoke-test.sh              # end-to-end: generate a launcher from the ACME example, then run it
@@ -229,6 +237,14 @@ bash scripts/lint-templates.sh          # static lint on every templates/**/*.tp
 python3 scripts/check-skill-quality.py  # programmatic SKILL.md audit (frontmatter, body, refs, forbidden terms)
 python3 -m pytest tests/                # unit + integration tests for render.py and generate.py (16 + N cases)
 python3 tests/branding/run_eval.py      # branding eval — 30 trap prompts checking for vendor-name leaks
+
+# v0.5 tools — operate on a rendered launcher tree
+python3 scripts/audit-launcher.py       # 30+ post-render rules, P0/P1/P2 findings on the generated tree
+python3 scripts/url-purge.py            # sweep + optional auto-patch of leaked vendor URLs
+python3 scripts/compliance-docx.py      # generate the 10-section RSSI/CISO/DPO Word document
+python3 scripts/api-probe.py            # probe the gateway URL: reachability, models, auth, TLS cert
+python3 scripts/load-test.py            # smoke load test against the gateway (latency, throughput)
+python3 scripts/pixel-art.py            # render the ASCII brand banner (6 styles, terminal-width aware)
 ```
 
 Use `--strict` on `check-skill-quality.py` for a non-zero exit code on any miss (CI-friendly). Reports live under [`tests/`](tests/) (`SMOKE_REPORT.md`, `AUDIT_REPORT.md`, `SCRUB_REPORT.md`, `SYNC_REPORT.md`).
@@ -284,3 +300,11 @@ MIT — see [LICENSE](LICENSE). Use it, fork it, ship your own.
 ## Contributing
 
 Issues, PRs, and new CLI templates welcome. If you ship a Corporate Launcher in your org, send a 1-paragraph case study — every example sharpens the skill's interview phase.
+
+---
+
+<div align="center">
+
+**Made for friends · Made from France with <span style="color:#e11d48">❤️</span>**
+
+</div>

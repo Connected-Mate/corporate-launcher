@@ -82,6 +82,10 @@ DOC_ALIASES: frozenset[str] = frozenset(
         "AWS_PROFILE",
         "NEXUS_USER",
         "NEXUS_PASS",
+        # ANSI color literals injected by templates/banner/footer.sh.tpl.
+        "RED", "DIM", "RESET",
+        # Counts derived at generation time from list-valued answers.
+        "MCP_SERVERS_COUNT", "SKILLS_COUNT",
     }
 )
 
@@ -103,7 +107,13 @@ KNOWN_CONFUSIONS: tuple[tuple[str, str], ...] = (
 
 
 def extract_template_vars(root: Path) -> dict[str, list[Path]]:
-    """Return {VAR_NAME: [files that reference it]}."""
+    """Return {VAR_NAME: [files that reference it]}.
+
+    Scans both `templates/**/*.tpl` (Jinja-style ${VAR}) and the Python
+    generator scripts in `scripts/` (which read flags via ctx.get("VAR")).
+    Variables consumed only by Python orchestration (e.g. API_PROBE_ENABLED
+    gating a sub-script invocation) would otherwise look "dead" to this tool.
+    """
     usage: dict[str, list[Path]] = defaultdict(list)
     for tpl in sorted(root.glob("templates/**/*.tpl")):
         try:
@@ -112,16 +122,49 @@ def extract_template_vars(root: Path) -> dict[str, list[Path]]:
             continue
         for var in VAR_RE.findall(text):
             usage[var].append(tpl.relative_to(root))
+    # Also scan generator scripts for ctx.get("VAR_NAME") references.
+    py_var_re = re.compile(r'ctx(?:\.get)?\s*[\(\[]\s*["\']([A-Z][A-Z0-9_]*)["\']')
+    for py in sorted(root.glob("scripts/*.py")):
+        try:
+            text = py.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for var in py_var_re.findall(text):
+            usage[var].append(py.relative_to(root))
     return usage
 
 
+DOC_FILES: tuple[str, ...] = (
+    # Tables here document CONFIG VARS (interview answers, Jinja-substituted).
+    # env-vars.md describes RUNTIME shell exports — out of scope here.
+    "references/interview-flow.md",
+    "references/skills-bundle.md",
+)
+
+
 def extract_documented_vars(flow_md: Path) -> set[str]:
-    """Pull every var name from the table rows in interview-flow.md."""
+    """Pull every var name from table rows in the v0.5 reference docs.
+
+    interview-flow.md is the primary spec, but several families are
+    documented in companion tables (env-vars, skills-bundle, etc.). All
+    are part of the contract for sync-vars purposes.
+    """
     documented: set[str] = set()
-    for line in flow_md.read_text(encoding="utf-8").splitlines():
-        match = TABLE_ROW_RE.match(line)
-        if match:
-            documented.add(match.group(1))
+    root = flow_md.parent.parent
+    candidates = [flow_md] + [root / p for p in DOC_FILES]
+    seen: set[Path] = set()
+    for doc in candidates:
+        try:
+            doc_r = doc.resolve()
+        except OSError:
+            continue
+        if doc_r in seen or not doc_r.is_file():
+            continue
+        seen.add(doc_r)
+        for line in doc.read_text(encoding="utf-8").splitlines():
+            match = TABLE_ROW_RE.match(line)
+            if match:
+                documented.add(match.group(1))
     return documented | DOC_ALIASES
 
 

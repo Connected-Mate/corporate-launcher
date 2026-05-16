@@ -1,6 +1,6 @@
 {
   "scenario_name": "claude-bedrock",
-  "description": "ACME wraps Claude Code on AWS Bedrock with a corporate proxy. Bedrock auto-forces the strip-proxy (rule #6). Distribution via a private internal Gitea repo. No skills bundle, no MCP servers — pure launcher + cyber-rules + cost tracking.",
+  "description": "ACME wraps Claude Code on AWS Bedrock with a corporate proxy. Bedrock auto-forces the strip-proxy (rule #6). Distribution via a private internal Gitea repo. No skills bundle, no MCP servers \u2014 pure launcher + cyber-rules + cost tracking.",
   "config": {
     "ACCEPT_TLS_INSPECTION": "no",
     "ADMIN_TOKEN": "ACME_LITELLM_ADMIN_TOKEN",
@@ -37,7 +37,7 @@
     "CORP_INCIDENT_CONTACT": "soc@acme.example",
     "CORP_INTERNAL_CONTACT": "ai-platform@acme.example",
     "CORP_LAUNCHER_VERSION": "1.0.0",
-    "CORP_LICENSE_NOTE": "Internal use only — ACME confidential",
+    "CORP_LICENSE_NOTE": "Internal use only \u2014 ACME confidential",
     "CORP_NAME": "ACME Bedrock Copilot",
     "CORP_NO_PROXY": "127.0.0.1,localhost,.acme.internal",
     "CORP_ORGANIZATION": "ACME Industries",
@@ -102,7 +102,19 @@
     "VPN_PROBE_URL": "https://bedrock-runtime.eu-west-3.amazonaws.com",
     "VPN_PROFILE_NAME": "acme-corp",
     "VPN_REQUIRED": "yes",
-    "WRAPPED_CLIS": ["claude-code"]
+    "WRAPPED_CLIS": [
+      "claude-code"
+    ],
+    "API_PROBE_ENABLED": "no",
+    "BANNER_GENERATE": "no",
+    "COMPLIANCE_DOCX": "no",
+    "CYBER_REVIEW_REQUIRED": "no",
+    "DPO_REVIEW_REQUIRED": "no",
+    "LOAD_TEST_ENABLED": "no",
+    "LOAD_TEST_CONCURRENCY": "1",
+    "LOAD_TEST_TOTAL": "1",
+    "SELF_AUDIT_ENABLED": "yes",
+    "URL_PURGE_AUTOPATCH": "no"
   },
   "expected_files": [
     "acme-bedrock",
@@ -137,7 +149,10 @@
     "README.md",
     "scaffold.sh"
   ],
-  "expected_branding_check": ["Claude", "Anthropic"],
+  "expected_branding_check": [
+    "Claude",
+    "Anthropic"
+  ],
   "branding_check_scope": "launcher_help_stdout",
-  "branding_check_note": "These terms appear by design in BRANDING.md (forbidden-terms list), in cyber-rules.md (negative identity declaration), and in pre-tool-hook regexes (leak-detection patterns) — see tests/branding/ for the authoritative scope. The check here verifies that user-facing launcher output (--help / banner) does NOT contain them."
+  "branding_check_note": "These terms appear by design in BRANDING.md (forbidden-terms list), in cyber-rules.md (negative identity declaration), and in pre-tool-hook regexes (leak-detection patterns) \u2014 see tests/branding/ for the authoritative scope. The check here verifies that user-facing launcher output (--help / banner) does NOT contain them."
 }

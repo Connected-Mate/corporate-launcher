@@ -9,15 +9,29 @@ distribution artefacts the creator asked for.
 Pipeline:
     1. Load and validate the config file (``${VAR}`` schema, see
        ``references/interview-flow.md`` for the validation rules).
+    1.5 If ``API_PROBE_ENABLED=yes`` call ``scripts/api-probe.py``
+        against the configured gateway; save report to
+        ``INSTALL_DIR/.api-probe-report.json``. Failures prompt
+        the operator unless ``--ignore-probe`` / ``--non-interactive``.
     2. For each CLI in ``WRAPPED_CLIS`` render
        ``templates/<cli>/`` and ``templates/shared/`` into
        ``INSTALL_DIR`` (and ``INSTALL_DIR/scripts/`` for shared bits).
+    2.5 If ``BANNER_GENERATE=yes`` invoke ``scripts/pixel-art-logo.py``
+        and write ``INSTALL_DIR/banner.txt`` (consumed by show_banner).
     3. If ``SKILLS_MODE != none`` invoke ``scripts/skills-installer.py``
        with a derived skills config.
     4. If ``MCP_SERVERS`` is non-empty invoke ``scripts/mcp-installer.py``
        once per wrapped CLI.
+    4.5 Run ``scripts/audit-launcher.py`` and save
+        ``INSTALL_DIR/audit-report.{md,json}``. P0 findings warn
+        (or abort under ``--strict``).
+    4.6 Run ``scripts/url-purge.py``. Auto-patches when
+        ``URL_PURGE_AUTOPATCH=yes``; aborts under ``--strict``.
     5. If ``DIST_MODE != none`` render ``templates/dist/<mode>/``
        into ``dist/``.
+    5.5 If ``COMPLIANCE_DOCX=yes`` call
+        ``scripts/build-compliance-docx.py`` → ``compliance.docx``.
+        Soft-fails when python-docx is missing.
     6. For ``public-git`` / ``private-git`` run the rendered
        ``scaffold.sh`` (if any) to push the repo.
     7. For ``tarball`` run the rendered ``build.sh``.
@@ -61,6 +75,22 @@ REPO_ROOT = HERE.parent
 TEMPLATES = REPO_ROOT / "templates"
 SUPPORTED_CLIS = ("claude-code", "codex-cli", "gemini-cli", "aider", "opencode", "continue-dev")
 SUPPORTED_DIST = ("public-git", "private-git", "tarball", "oneliner", "none")
+
+# Truthy values accepted in config flags (case-insensitive).
+_TRUTHY = ("yes", "true", "1", "on")
+
+
+def _is_truthy(value: object) -> bool:
+    return str(value or "").strip().lower() in _TRUTHY
+
+
+def _script_exists(name: str) -> Path | None:
+    """Return the script path if present, else None (with a soft warning)."""
+    path = HERE / name
+    if path.is_file():
+        return path
+    print(f"  skip: companion script not found — {path}")
+    return None
 INTERNAL_HOST_RE = re.compile(
     r"(\.internal\b|\.local\b|\.intra\b|^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[0-1])\.)",
     re.IGNORECASE,
@@ -371,6 +401,400 @@ def render_distribution(
 
 
 # ----------------------------------------------------------------------- #
+# Phase 1.5 — API gateway probe                                           #
+# ----------------------------------------------------------------------- #
+
+
+def _pick_probe_target(ctx: Mapping[str, object]) -> tuple[str, str, str]:
+    """Return (url, token, backend_hint) from the first CLI block that has them.
+
+    The token is resolved from a literal value OR from an env var name stored
+    in the config (e.g. CC_AUTH_ENV_KEY=ANTHROPIC_API_KEY).
+    """
+    url_keys = (
+        ("CC_PRIMARY_URL", "CC_AUTH_TOKEN", "CC_AUTH_ENV_KEY", "CC_BACKEND"),
+        ("CX_PRIMARY_URL", "CX_AUTH_TOKEN", "CX_AUTH_ENV_KEY", "CX_BACKEND"),
+        ("LLM_OPENAI_BASE_URL", "LLM_OPENAI_AUTH", "LLM_OPENAI_AUTH_ENV", "LLM_BACKEND"),
+    )
+    for url_k, tok_k, env_k, backend_k in url_keys:
+        url = str(ctx.get(url_k) or "")
+        if not url:
+            continue
+        token = str(ctx.get(tok_k) or "")
+        if not token:
+            env_name = str(ctx.get(env_k) or "")
+            if env_name:
+                token = os.environ.get(env_name, "")
+        backend = str(ctx.get(backend_k) or "auto").lower()
+        return url, token, backend
+    return "", "", "auto"
+
+
+def run_api_probe(
+    ctx: Mapping[str, object],
+    install_dir: Path,
+    *,
+    dry_run: bool,
+    ignore_probe: bool,
+    non_interactive: bool,
+) -> dict[str, Any] | None:
+    """Phase 1.5 — probe the corporate AI gateway before generation."""
+    if not _is_truthy(ctx.get("API_PROBE_ENABLED")):
+        return None
+    script = _script_exists("api-probe.py")
+    if script is None:
+        return None
+
+    url, token, backend = _pick_probe_target(ctx)
+    if not url or not token:
+        print("  skip: API_PROBE_ENABLED=yes but no gateway URL/token resolved")
+        return None
+
+    cmd = [
+        sys.executable, str(script),
+        "--url", url,
+        "--token", token,
+    ]
+    # Map common backend strings to api-probe's --backend choices.
+    backend_map = {
+        "anthropic": "anthropic",
+        "openai": "openai",
+        "azure": "azure",
+        "vertex": "vertex",
+        "litellm": "litellm",
+        "bedrock": "bedrock-proxy",
+        "bedrock-proxy": "bedrock-proxy",
+    }
+    if backend in backend_map:
+        cmd.extend(["--backend", backend_map[backend]])
+    model = str(
+        ctx.get("CC_PRIMARY_MODEL")
+        or ctx.get("CX_PRIMARY_MODEL")
+        or ctx.get("LLM_PRIMARY_MODEL")
+        or ""
+    )
+    if model:
+        cmd.extend(["--model", model])
+
+    report_path = install_dir / ".api-probe-report.json"
+    if dry_run:
+        print(f"[dry-run] would run api-probe and write {report_path}")
+        return None
+
+    print(f"  $ {sys.executable} {script.name} --url {url} --token *** ...")
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    report: dict[str, Any]
+    try:
+        report = json.loads(proc.stdout or "{}")
+    except json.JSONDecodeError:
+        report = {"ok": False, "error": "non-json-output", "raw": proc.stdout[-500:]}
+    report["exit_code"] = proc.returncode
+
+    install_dir.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+    print(f"  probe report: {report_path}")
+
+    if proc.returncode != 0 or not report.get("ok", False):
+        err = report.get("error", f"exit={proc.returncode}")
+        print(f"  WARNING: api-probe failed: {err}")
+        if ignore_probe:
+            print("  --ignore-probe set, continuing.")
+        elif non_interactive:
+            raise GenerationError(
+                f"api-probe failed ({err}); rerun with --ignore-probe to bypass."
+            )
+        else:
+            try:
+                ans = input("  Continue anyway? [y/N] ").strip().lower()
+            except EOFError:
+                ans = ""
+            if ans not in ("y", "yes"):
+                raise GenerationError("aborted by operator after failed api-probe")
+    return report
+
+
+# ----------------------------------------------------------------------- #
+# Phase 4.5 — Self-audit                                                  #
+# ----------------------------------------------------------------------- #
+
+
+def run_self_audit(
+    ctx: Mapping[str, object],
+    install_dir: Path,
+    config_path: Path,
+    *,
+    dry_run: bool,
+    strict: bool,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    """Phase 4.5 — audit the rendered launcher; returns (report_md_path, json_report)."""
+    script = _script_exists("audit-launcher.py")
+    if script is None:
+        return None, None
+
+    report_md = install_dir / "audit-report.md"
+    report_json = report_md.with_suffix(".json")
+
+    cmd = [
+        sys.executable, str(script),
+        "--launcher-dir", str(install_dir),
+        "--config", str(config_path),
+        "--output", str(report_md),
+    ]
+    if dry_run:
+        print(f"[dry-run] would run audit-launcher → {report_md}")
+        return None, None
+
+    print(f"  $ {sys.executable} {script.name} --launcher-dir {install_dir} ...")
+    rc = subprocess.run(cmd, check=False).returncode
+
+    audit_json: dict[str, Any] | None = None
+    if report_json.is_file():
+        try:
+            audit_json = json.loads(report_json.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            audit_json = None
+
+    if audit_json:
+        failures = int(audit_json.get("failures", 0))
+        p0_checks: list[str] = []
+        for chk in audit_json.get("checks", []):
+            severity = str(chk.get("severity", "")).upper()
+            status = str(chk.get("status", "")).lower()
+            if severity == "P0" and status not in ("pass", "ok"):
+                p0_checks.append(str(chk.get("name", "?")))
+        if p0_checks:
+            print("  WARNING: P0 audit findings:")
+            for n in p0_checks:
+                print(f"    - {n}")
+            if strict:
+                raise GenerationError(
+                    f"audit found {len(p0_checks)} P0 issue(s); --strict aborts generation"
+                )
+        if failures and strict:
+            raise GenerationError(
+                f"audit reported {failures} failing check(s); --strict aborts generation"
+            )
+    elif rc != 0:
+        print(f"  warning: audit-launcher exited with code {rc}")
+
+    print(f"  audit report: {report_md}")
+    return report_md, audit_json
+
+
+# ----------------------------------------------------------------------- #
+# Phase 4.6 — URL purge scan                                              #
+# ----------------------------------------------------------------------- #
+
+
+def run_url_purge(
+    ctx: Mapping[str, object],
+    install_dir: Path,
+    config_path: Path,
+    *,
+    dry_run: bool,
+    strict: bool,
+) -> None:
+    """Phase 4.6 — scan for vendor URL leaks; optionally auto-patch."""
+    script = _script_exists("url-purge.py")
+    if script is None:
+        return
+
+    autopatch = _is_truthy(ctx.get("URL_PURGE_AUTOPATCH"))
+    report_md = install_dir / "url-purge-report.md"
+
+    cmd = [
+        sys.executable, str(script),
+        "--launcher-dir", str(install_dir),
+        "--config", str(config_path),
+        "--report", str(report_md),
+        "--strict",
+    ]
+    if autopatch:
+        cmd.append("--patch")
+    if dry_run:
+        print(f"[dry-run] would run url-purge → {report_md} (autopatch={autopatch})")
+        return
+
+    print(f"  $ {sys.executable} {script.name} --launcher-dir {install_dir} ...")
+    proc = subprocess.run(cmd, check=False)
+    violations = proc.returncode  # --strict returns #violations
+
+    if violations > 0:
+        print(f"  WARNING: {violations} vendor URL violation(s) found.")
+        if autopatch:
+            print("  URL_PURGE_AUTOPATCH=yes — violations patched in place.")
+        else:
+            print(
+                "  Re-run with URL_PURGE_AUTOPATCH=yes (or "
+                f"`python3 {script} --launcher-dir {install_dir} "
+                f"--config {config_path} --patch`) to rewrite them."
+            )
+        if strict:
+            raise GenerationError(
+                f"url-purge found {violations} violation(s); --strict aborts generation"
+            )
+
+
+# ----------------------------------------------------------------------- #
+# Phase 5.5 — Compliance .docx                                            #
+# ----------------------------------------------------------------------- #
+
+
+def run_compliance_docx(
+    ctx: Mapping[str, object],
+    install_dir: Path,
+    config_path: Path,
+    audit_report_md: Path | None,
+    *,
+    dry_run: bool,
+) -> Path | None:
+    """Phase 5.5 — render the compliance .docx if requested in the config."""
+    if not _is_truthy(ctx.get("COMPLIANCE_DOCX")):
+        return None
+    script = _script_exists("build-compliance-docx.py")
+    if script is None:
+        return None
+
+    out_path = install_dir / "compliance.docx"
+    cmd = [
+        sys.executable, str(script),
+        "--config", str(config_path),
+        "--launcher-dir", str(install_dir),
+        "--out", str(out_path),
+    ]
+    # build-compliance-docx prefers the JSON sidecar if present.
+    audit_json = (
+        audit_report_md.with_suffix(".json")
+        if audit_report_md is not None
+        else install_dir / "audit-report.json"
+    )
+    if audit_json.is_file():
+        cmd.extend(["--audit-report", str(audit_json)])
+
+    if dry_run:
+        print(f"[dry-run] would run build-compliance-docx → {out_path}")
+        return None
+
+    print(f"  $ {sys.executable} {script.name} --out {out_path} ...")
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    if proc.returncode != 0:
+        msg = (proc.stderr or proc.stdout or "").strip()
+        if "python-docx" in msg.lower():
+            print("  python-docx not installed — skipping compliance.docx.")
+            print("    install with:  pip install python-docx")
+        else:
+            print(f"  warning: build-compliance-docx exited {proc.returncode}: {msg[:200]}")
+        return None
+    if proc.stdout:
+        print(f"  {proc.stdout.strip()}")
+    return out_path if out_path.is_file() else None
+
+
+# ----------------------------------------------------------------------- #
+# Phase 6 — Pixel-art banner                                              #
+# ----------------------------------------------------------------------- #
+
+
+def run_load_test_smoke(
+    ctx: Mapping[str, object],
+    install_dir: Path,
+    *,
+    dry_run: bool,
+) -> Path | None:
+    """Phase 6.5 — optional smoke load-test against the gateway.
+
+    Off by default. When ``LOAD_TEST_ENABLED=yes`` the corporate launcher
+    fires a tiny burst (``LOAD_TEST_CONCURRENCY`` workers × ``LOAD_TEST_TOTAL``
+    requests) to confirm the gateway can answer under nominal load before the
+    bundle is signed off for distribution.
+    """
+    if not _is_truthy(ctx.get("LOAD_TEST_ENABLED")):
+        return None
+    script = _script_exists("load-test.py")
+    if script is None:
+        return None
+    url_keys = ("CC_PRIMARY_URL", "CX_PRIMARY_URL", "LLM_OPENAI_BASE_URL")
+    url = next((str(ctx.get(k)) for k in url_keys if ctx.get(k)), "")
+    if not url:
+        print("  skip: LOAD_TEST_ENABLED=yes but no gateway URL resolved")
+        return None
+    concurrency = str(ctx.get("LOAD_TEST_CONCURRENCY") or "2")
+    total = str(ctx.get("LOAD_TEST_TOTAL") or "10")
+    out_path = install_dir / "load-test-report.json"
+    cmd = [
+        sys.executable, str(script),
+        "--url", url,
+        "--concurrency", concurrency,
+        "--total", total,
+        "--out", str(out_path),
+    ]
+    if dry_run:
+        print(f"[dry-run] would run load-test → {out_path}")
+        return None
+    print(f"  $ {sys.executable} {script.name} --url {url} -c {concurrency} -n {total}")
+    subprocess.run(cmd, check=False)
+    return out_path if out_path.is_file() else None
+
+
+def emit_review_gates(ctx: Mapping[str, object]) -> None:
+    """Echo cyber/DPO review obligations recorded in the config.
+
+    These flags drive *external* workflow (ticketing, governance docs) and
+    do not change the rendered launcher, but they MUST be surfaced so the
+    operator can attach the right approval before distribution.
+    """
+    if _is_truthy(ctx.get("CYBER_REVIEW_REQUIRED")):
+        authority = str(ctx.get("CYBER_AUTHORITY") or "Corporate cybersecurity")
+        print(f"  REMINDER: cyber review required by {authority} before distribution.")
+    if _is_truthy(ctx.get("DPO_REVIEW_REQUIRED")):
+        dpo = str(ctx.get("CORP_DPO_CONTACT") or "Data Protection Officer")
+        print(f"  REMINDER: DPO sign-off required ({dpo}).")
+
+
+def run_pixel_art_banner(
+    ctx: Mapping[str, object],
+    install_dir: Path,
+    *,
+    dry_run: bool,
+) -> Path | None:
+    """Phase 6 — render an ASCII banner.txt read by launcher.sh's show_banner."""
+    if not _is_truthy(ctx.get("BANNER_GENERATE")):
+        return None
+    script = _script_exists("pixel-art-logo.py")
+    if script is None:
+        return None
+
+    text = str(ctx.get("CORP_NAME") or ctx.get("CORP_SLUG") or "")
+    if not text:
+        print("  skip: BANNER_GENERATE=yes but no CORP_NAME/CORP_SLUG to render")
+        return None
+
+    style = str(ctx.get("BANNER_STYLE") or "auto")
+    color = str(ctx.get("BANNER_COLOR_PRIMARY") or "")
+    out_path = install_dir / "banner.txt"
+    cmd = [
+        sys.executable, str(script),
+        "--text", text,
+        "--style", style,
+        "--out", str(out_path),
+    ]
+    if color:
+        cmd.extend(["--color", color])
+
+    if dry_run:
+        print(f"[dry-run] would render pixel-art banner → {out_path}")
+        return None
+
+    print(f"  $ {sys.executable} {script.name} --text {text!r} --style {style} ...")
+    rc = subprocess.run(cmd, check=False).returncode
+    if rc != 0 or not out_path.is_file():
+        print(f"  warning: pixel-art-logo exited {rc}; no banner.txt written")
+        return None
+    print(f"  banner: {out_path}")
+    return out_path
+
+
+# ----------------------------------------------------------------------- #
 # Summary                                                                 #
 # ----------------------------------------------------------------------- #
 
@@ -442,6 +866,21 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Skip the config validation rules (use with care)",
     )
+    p.add_argument(
+        "--ignore-probe",
+        action="store_true",
+        help="Continue generation even if the api-probe phase fails",
+    )
+    p.add_argument(
+        "--non-interactive",
+        action="store_true",
+        help="Never prompt; treat any prompt as a refusal (CI-friendly)",
+    )
+    p.add_argument(
+        "--strict",
+        action="store_true",
+        help="Abort if the self-audit or url-purge phases report issues",
+    )
     args = p.parse_args(argv)
 
     if not args.config.is_file():
@@ -481,16 +920,55 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  dry_run     = {args.dry_run}")
 
     try:
-        print("\n[1/4] Rendering CLI templates ...")
+        print("\n[1/9] Probing corporate AI gateway ...")
+        run_api_probe(
+            ctx, install_dir,
+            dry_run=args.dry_run,
+            ignore_probe=args.ignore_probe,
+            non_interactive=args.non_interactive,
+        )
+
+        print("\n[2/9] Rendering CLI templates ...")
         render_clis(ctx, install_dir, dry_run=args.dry_run)
 
-        print("\n[2/4] Installing skills bundle ...")
+        print("\n[3/9] Generating pixel-art banner ...")
+        run_pixel_art_banner(ctx, install_dir, dry_run=args.dry_run)
+
+        print("\n[4/9] Installing skills bundle ...")
         run_skills_installer(ctx, install_dir, dry_run=args.dry_run)
 
-        print("\n[3/4] Configuring MCP servers ...")
+        print("\n[5/9] Configuring MCP servers ...")
         run_mcp_installer(ctx, install_dir, dry_run=args.dry_run)
 
-        print("\n[4/4] Rendering distribution artefacts ...")
+        print("\n[6/9] Self-auditing rendered launcher ...")
+        if _is_truthy(ctx.get("SELF_AUDIT_ENABLED", "yes")):
+            audit_md, _audit_json = run_self_audit(
+                ctx, install_dir, args.config.resolve(),
+                dry_run=args.dry_run, strict=args.strict,
+            )
+        else:
+            print("  skip: SELF_AUDIT_ENABLED=no")
+            audit_md, _audit_json = None, None
+
+        print("\n[7/9] Scanning for vendor URL leaks ...")
+        run_url_purge(
+            ctx, install_dir, args.config.resolve(),
+            dry_run=args.dry_run, strict=args.strict,
+        )
+
+        print("\n[8/9] Building compliance .docx (if requested) ...")
+        run_compliance_docx(
+            ctx, install_dir, args.config.resolve(), audit_md,
+            dry_run=args.dry_run,
+        )
+
+        # Optional smoke load test (off by default).
+        run_load_test_smoke(ctx, install_dir, dry_run=args.dry_run)
+
+        # External review reminders (cyber / DPO) — pure stdout side effect.
+        emit_review_gates(ctx)
+
+        print("\n[9/9] Rendering distribution artefacts ...")
         produced_dist = render_distribution(ctx, install_dir, dist_dir, dry_run=args.dry_run)
 
     except UnresolvedVariable as e:

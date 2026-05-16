@@ -1,6 +1,6 @@
 {
   "scenario_name": "codex-azure",
-  "description": "Globex wraps the Codex CLI against Azure OpenAI with an admin lockdown (CX_REQUIRE_LOCKDOWN=yes drops requirements.toml). Private-git distribution. Skills preset = security-pack. No MCP servers (codex MCP injector requires a config file path that isn't wired in the orchestrator yet — keeping the fixture honest).",
+  "description": "Globex wraps the Codex CLI against Azure OpenAI with an admin lockdown (CX_REQUIRE_LOCKDOWN=yes drops requirements.toml). Private-git distribution. Skills preset = security-pack. No MCP servers (codex MCP injector requires a config file path that isn't wired in the orchestrator yet \u2014 keeping the fixture honest).",
   "config": {
     "ACCEPT_TLS_INSPECTION": "no",
     "ADMIN_TOKEN": "GLOBEX_AZURE_ADMIN_TOKEN",
@@ -36,7 +36,7 @@
     "CORP_INCIDENT_CONTACT": "soc@globex.example",
     "CORP_INTERNAL_CONTACT": "ai-platform@globex.example",
     "CORP_LAUNCHER_VERSION": "1.0.0",
-    "CORP_LICENSE_NOTE": "Internal use only — Globex confidential",
+    "CORP_LICENSE_NOTE": "Internal use only \u2014 Globex confidential",
     "CORP_NAME": "Globex Codex",
     "CORP_NO_PROXY": "127.0.0.1,localhost,.globex.internal",
     "CORP_ORGANIZATION": "Globex Corporation",
@@ -103,7 +103,9 @@
     "SKILLS_LOCAL_PATH": "",
     "SKILLS_MODE": "preset",
     "SKILLS_PICK": "",
-    "SKILLS_PRESETS": ["security-pack"],
+    "SKILLS_PRESETS": [
+      "security-pack"
+    ],
     "SSO_PROVIDER": "Azure AD",
     "TERMINAL_TITLE": "Globex Codex",
     "TOKEN_PORTAL_URL": "https://codex.globex.internal/token",
@@ -115,7 +117,19 @@
     "VPN_PROBE_URL": "https://globex-prod.openai.azure.com",
     "VPN_PROFILE_NAME": "globex-corp",
     "VPN_REQUIRED": "yes",
-    "WRAPPED_CLIS": ["codex-cli"]
+    "WRAPPED_CLIS": [
+      "codex-cli"
+    ],
+    "API_PROBE_ENABLED": "no",
+    "BANNER_GENERATE": "no",
+    "COMPLIANCE_DOCX": "no",
+    "CYBER_REVIEW_REQUIRED": "no",
+    "DPO_REVIEW_REQUIRED": "no",
+    "LOAD_TEST_ENABLED": "no",
+    "LOAD_TEST_CONCURRENCY": "1",
+    "LOAD_TEST_TOTAL": "1",
+    "SELF_AUDIT_ENABLED": "yes",
+    "URL_PURGE_AUTOPATCH": "no"
   },
   "expected_files": [
     "BRANDING.md",
@@ -152,7 +166,10 @@
     "README.md",
     "scaffold.sh"
   ],
-  "expected_branding_check": ["Claude", "Anthropic"],
+  "expected_branding_check": [
+    "Claude",
+    "Anthropic"
+  ],
   "branding_check_scope": "launcher_help_stdout",
-  "branding_check_note": "FORBIDDEN_TERMS extends to OpenAI/ChatGPT — but those terms appear in cyber-rules.md by design as part of the negative identity. The check verifies the user-facing launcher --help banner stays clean."
+  "branding_check_note": "FORBIDDEN_TERMS extends to OpenAI/ChatGPT \u2014 but those terms appear in cyber-rules.md by design as part of the negative identity. The check verifies the user-facing launcher --help banner stays clean."
 }

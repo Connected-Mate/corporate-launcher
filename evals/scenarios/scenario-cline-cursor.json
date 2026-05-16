@@ -23,7 +23,11 @@
     "CC_PRIMARY_URL": "https://litellm.initech.internal",
     "CLINE_AUTO_APPROVE": "no",
     "CLINE_DISABLE_MCP_MARKETPLACE": "yes",
-    "CLINE_TARGET_IDES": ["code", "cursor", "codium"],
+    "CLINE_TARGET_IDES": [
+      "code",
+      "cursor",
+      "codium"
+    ],
     "CORP_AUDIT_LOCATION": "splunk://siem.initech.internal/index/launcher",
     "CORP_AUDIT_SYSTEM": "Splunk",
     "CORP_BRAND_ANSI": "141",
@@ -39,7 +43,7 @@
     "CORP_INCIDENT_CONTACT": "soc@initech.example",
     "CORP_INTERNAL_CONTACT": "ai-platform@initech.example",
     "CORP_LAUNCHER_VERSION": "1.0.0",
-    "CORP_LICENSE_NOTE": "Internal use only — Initech confidential",
+    "CORP_LICENSE_NOTE": "Internal use only \u2014 Initech confidential",
     "CORP_NAME": "Initech Cline-for-Cursor",
     "CORP_NO_PROXY": "127.0.0.1,localhost,.initech.internal",
     "CORP_ORGANIZATION": "Initech Corporation",
@@ -78,8 +82,16 @@
     "LICENSE_TYPE": "Proprietary",
     "LLM_TOKEN_URL": "https://sso.initech.internal/oauth/token",
     "MCP_SERVERS": [
-      {"name": "jira", "trust": false, "url": "https://mcp.initech.internal/jira"},
-      {"name": "github", "trust": false, "url": "https://mcp.initech.internal/github"}
+      {
+        "name": "jira",
+        "trust": false,
+        "url": "https://mcp.initech.internal/jira"
+      },
+      {
+        "name": "github",
+        "trust": false,
+        "url": "https://mcp.initech.internal/github"
+      }
     ],
     "NODE_VERSION_MIN": "20",
     "NO_PROXY_LIST": "127.0.0.1,localhost,.initech.internal",
@@ -107,7 +119,19 @@
     "VPN_PROBE_URL": "https://litellm.initech.internal",
     "VPN_PROFILE_NAME": "initech-corp",
     "VPN_REQUIRED": "yes",
-    "WRAPPED_CLIS": ["claude-code"]
+    "WRAPPED_CLIS": [
+      "claude-code"
+    ],
+    "API_PROBE_ENABLED": "no",
+    "BANNER_GENERATE": "no",
+    "COMPLIANCE_DOCX": "no",
+    "CYBER_REVIEW_REQUIRED": "no",
+    "DPO_REVIEW_REQUIRED": "no",
+    "LOAD_TEST_ENABLED": "no",
+    "LOAD_TEST_CONCURRENCY": "1",
+    "LOAD_TEST_TOTAL": "1",
+    "SELF_AUDIT_ENABLED": "yes",
+    "URL_PURGE_AUTOPATCH": "no"
   },
   "expected_files": [
     "initech-cline",
@@ -143,7 +167,10 @@
     "README.md",
     "scaffold.sh"
   ],
-  "expected_branding_check": ["Claude", "Anthropic"],
+  "expected_branding_check": [
+    "Claude",
+    "Anthropic"
+  ],
   "branding_check_scope": "launcher_help_stdout",
-  "branding_check_note": "FORBIDDEN_TERMS also includes 'Cline', 'saoudrizwan' and 'cursor.com' — but those terms appear inside settings.json and BRANDING.md as part of the extension's required identifier strings. The check verifies the user-facing launcher --help banner does not leak vendor names."
+  "branding_check_note": "FORBIDDEN_TERMS also includes 'Cline', 'saoudrizwan' and 'cursor.com' \u2014 but those terms appear inside settings.json and BRANDING.md as part of the extension's required identifier strings. The check verifies the user-facing launcher --help banner does not leak vendor names."
 }

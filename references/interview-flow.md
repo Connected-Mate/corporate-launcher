@@ -16,6 +16,7 @@ Save the answers under uppercase snake_case keys (`CORP_NAME`, `LLM_PRIMARY_URL`
 - [Section 6 — Branding](#section-6--branding)
 - [Section 7 — Install layout (creator's machine)](#section-7--install-layout-creators-machine)
 - [Section 8 — Skills bundle (what colleagues get inside the launcher)](#section-8--skills-bundle-what-colleagues-get-inside-the-launcher)
+- [Section 8.5 — Compliance & audit posture](#section-85--compliance--audit-posture)
 - [Section 9 — Distribution (how to ship it to the team)](#section-9--distribution-how-to-ship-it-to-the-team)
 - [Section 10 — Runtime / derived variables](#section-10--runtime--derived-variables)
 - [Section 11 — Feature-specific variables](#section-11--feature-specific-variables)
@@ -167,6 +168,7 @@ This section configures everything the launcher needs to reach the corporate gat
 | `CORP_HTTPS_PROXY` | What full `https_proxy` URL should the launcher inject into its env? | url | derived from `PROXY_HOST`/`PROXY_PORT` |
 | `CORP_NO_PROXY` | What effective `NO_PROXY` value should the launcher emit? | string | derived from `NO_PROXY_LIST` |
 | `ACCEPT_TLS_INSPECTION` | Should we allow a `NODE_TLS_REJECT_UNAUTHORIZED=0` fallback if no CA is found? Choose: yes or no | yes/no | no |
+| `API_PROBE_ENABLED` | Probe the gateway during install (recommended)? | yes/no | yes |
 
 ---
 
@@ -184,6 +186,15 @@ This section captures the security context the launcher must reference: the cybe
 | `TOKEN_PORTAL_URL` | Where do users mint personal tokens for the gateway? (URL) | url | empty |
 | `TOKEN_TTL_DAYS` | How many days is a personal token valid for? (shown in onboarding) | number | `30` |
 | `COST_CURRENCY` | Which currency should cost reporting use? Choose: `EUR`, `USD`, or `GBP` | enum | `EUR` |
+| `COST_TRACKING_ENABLED` | Track token cost per session and emit a per-CLI ledger? | yes/no | yes |
+| `BLOCK_TELEMETRY` | Disable upstream telemetry (`STATSIG_DISABLED`, `DISABLE_TELEMETRY=1`, ...)? | yes/no | yes |
+| `BLOCK_AUTO_UPDATE` | Lock the CLI to its pinned version (no upstream auto-update)? | yes/no | yes |
+| `SELF_AUDIT_ENABLED` | Run a self-audit on the generated launcher before finishing? | yes/no | yes |
+| `URL_PURGE_AUTOPATCH` | Auto-patch any leaked vendor URLs found in the launcher? | yes/no | no |
+| `COMPLIANCE_DOCX` | Generate a Word document for your security office? | yes/no | yes |
+| `LOAD_TEST_ENABLED` | Run a small load test against the gateway after install? | yes/no | no |
+| `LOAD_TEST_TOTAL` | Number of test requests if load test enabled | number | 50 |
+| `LOAD_TEST_CONCURRENCY` | Concurrent requests if load test enabled | number | 5 |
 
 ---
 
@@ -198,6 +209,8 @@ This section controls the visual identity of the launcher at runtime: terminal c
 | `TERMINAL_TITLE` | What string should be set as the terminal title at launch? | string | `${CORP_NAME} — Powered by ${CORP_POWERED_BY}` |
 | `LANGUAGE` | What's the default response language? Choose: `en`, `fr`, `de`, `es`, `it`, `pt`, `nl` | enum | `en` |
 | `FORBIDDEN_TERMS` | Which words must the assistant never output? (comma-separated, e.g. vendor names) | string | `Claude,Anthropic` for Claude Code wrapper |
+| `BANNER_GENERATE` | Generate an ASCII pixel-art banner for the launcher? | yes/no | yes |
+| `BANNER_STYLE` | block / slant / mini / pixel / vintage / tech / auto | enum | `auto` |
 
 ---
 
@@ -252,6 +265,18 @@ Pre-configure MCP servers in the launcher?
 | Var | Type | Example |
 |---|---|---|
 | `MCP_SERVERS` | list | `[{"name":"jira","url":"https://mcp.acme/jira","headers":{"Authorization":"Bearer ${env:MCP_TOKEN}"}}]` |
+
+---
+
+## Section 8.5 — Compliance & audit posture
+
+This section captures the review chain attached to the launcher: which internal authorities must sign off before it ships, whether the DPO is in the loop for PII-handling scenarios, and any pre-existing clearance reference to attach to audit headers and `INTERNAL.md`.
+
+| Var | Question | Type | Default |
+|---|---|---|---|
+| `CYBER_REVIEW_REQUIRED` | Will the cyber team review this launcher? | yes/no | yes |
+| `DPO_REVIEW_REQUIRED` | Will the DPO review the launcher (PII processing)? | yes/no | no |
+| `RSSI_CLEARANCE_REF` | Existing ticket / reference for cyber clearance | string | empty |
 
 ---
 

@@ -58,6 +58,14 @@ Sections in order:
 
 If the user replies "I don't know" to a network/cyber question, mark it `unknown` and continue — generate sane defaults and flag them in the post-install summary so the security office can review.
 
+### Phase 1.5 — Probe the gateway
+
+> Why: catches typos in URL, expired tokens, missing models, TLS issues before the user invests time in the rest of the interview.
+
+> What: invokes `scripts/api-probe.py` with the user's URL + token. Reports reachable / unreachable, models catalog, latency, TLS cert.
+
+> If the probe fails, the skill should pause and ask: "Continue anyway, or revise the answer?" — never silently proceed with a known-broken gateway.
+
 ### Phase 2 — Validate
 
 Before generating anything:
@@ -78,6 +86,22 @@ For each selected CLI:
 6. Set executable bits, chmod 600 on the keychain fallback file
 7. Run a dry-run test (file exists, syntax valid, `--help` works)
 
+### Phase 3.5 — Self-audit the generated launcher
+
+> Why: the user may not have known every cyber requirement. The skill must verify its own output before declaring success.
+
+> What: runs `scripts/audit-launcher.py` against the rendered tree. 30+ rules (no vendor URLs, no plain secrets, VPN check present, telemetry kill switches all set, etc.). Prints findings ranked P0/P1/P2.
+
+> The skill should present findings interactively: "Here are 3 things I noticed — want me to fix them, ask you, or leave as-is?"
+
+### Phase 3.6 — URL purge sweep
+
+> Defense in depth: a second pass that specifically catches vendor URLs leaked anywhere outside the explicit deny lists.
+
+### Phase 3.7 — Pixel-art banner
+
+> Generate the launcher's startup banner via `scripts/pixel-art-logo.py`. Saved to `<install_dir>/banner.txt`; the launcher's show_banner() prints it at every launch.
+
 ### Phase 4 — Generate the distribution kit
 
 Based on the chosen distribution mode:
@@ -88,6 +112,10 @@ Based on the chosen distribution mode:
 
 See `references/distribution-modes.md` for the security caveats of each mode.
 
+### Phase 4.5 — Compliance .docx
+
+> If the user wants to share the launcher's compliance posture with their RSSI/CISO, generate `compliance.docx` ready to send. 10-section Word document covering architecture, threat model, cyber controls, network perimeter, audit log, offboarding.
+
 ### Phase 5 — Post-install
 
 Print:
@@ -96,6 +124,8 @@ Print:
 - the uninstall command
 - the **distribution artifact** (repo URL, tarball path, or one-liner) the user shares with their team
 - a checklist of follow-ups (API key not yet set, VPN required, RSSI sign-off pending)
+
+> "Made for friends · Made from France with ❤️"
 
 ---
 
@@ -107,6 +137,12 @@ Print:
 - `references/security-patterns.md` — proxy detection, CA bundle, VPN gate, secret storage
 - `references/skills-bundle.md` — how the skills bundling works, presets available
 - `references/distribution-modes.md` — the 4 distribution modes and their trade-offs
+- `references/api-probe.md` — pre-flight gateway probe (reachability, models, TLS, latency)
+- `references/self-audit.md` — 30+ rule audit of the rendered launcher tree, P0/P1/P2 findings
+- `references/url-purge.md` — second-pass sweep for leaked vendor URLs outside deny lists
+- `references/compliance-docx.md` — 10-section Word document for RSSI/CISO sign-off
+- `references/pixel-art-logo.md` — startup banner generator saved to `<install_dir>/banner.txt`
+- `references/load-testing.md` — sustained-throughput and concurrency checks for the gateway
 - `references/examples/` — three filled-out examples (Claude/LiteLLM, Codex/Azure, Gemini/Vertex)
 
 Read only what you need for the user's CLI + backend + distribution combo.

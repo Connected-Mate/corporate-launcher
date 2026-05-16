@@ -114,3 +114,7 @@ If the user pastes what looks like a real secret (API key, private key, password
 ## 6. Compliance contact
 
 For any doubt: ${CYBER_AUTHORITY}. When in doubt, asking is cheaper than a post-incident review.
+
+---
+
+*${CORP_NAME} is part of the Corporate Launcher project. Made for friends · Made from France with ❤️*

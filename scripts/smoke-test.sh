@@ -89,6 +89,11 @@ fail() {
     FAILURES=$((FAILURES + 1))
 }
 
+warn() {
+    local detail="$1"
+    printf "  %sWARN%s %s\n" "$C_YELLOW" "$C_RESET" "$detail"
+}
+
 # Run a command, capture stdout+stderr to a tmp log, return its rc.
 # Args: <logfile> <cmd...>
 run_capture() {
@@ -161,17 +166,39 @@ fi
 
 # --------------------------------------------------------------------------- #
 # Step 3 — pytest tests/test_render.py                                        #
+# pytest may not be installed on the system python; probe a few candidates.   #
 # --------------------------------------------------------------------------- #
 header 3 "$TOTAL" "pytest tests/test_render.py -q"
 LOG="$LOG_DIR/03-pytest.log"
+
+# Find a python interpreter that can `import pytest` (no install attempted).
+PYTEST_PY=""
+for cand in python3 /opt/homebrew/bin/python3.11 /opt/homebrew/bin/python3.12 \
+            /usr/bin/python3 python3.11 python3.12 python3.13; do
+    if command -v "$cand" >/dev/null 2>&1 && \
+       "$cand" -c "import pytest" >/dev/null 2>&1; then
+        PYTEST_PY="$cand"
+        break
+    fi
+done
+
 set +e
-( cd "$REPO_ROOT" && python3 -m pytest tests/test_render.py -q ) >"$LOG" 2>&1
-RC=$?
+if [ -n "$PYTEST_PY" ]; then
+    ( cd "$REPO_ROOT" && PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+        "$PYTEST_PY" -m pytest tests/test_render.py -q ) >"$LOG" 2>&1
+    RC=$?
+else
+    echo "pytest not installed on any candidate python" >"$LOG"
+    RC=127
+fi
 set -e
 if [ $RC -eq 0 ]; then
     SUM="$(tail -n 1 "$LOG" | tr -d '\r')"
-    ok "pytest passed ($SUM)"
+    ok "pytest passed ($SUM, via $PYTEST_PY)"
     record 3 "pytest test_render"  "OK"   "$SUM"
+elif [ $RC -eq 127 ]; then
+    warn "pytest not installed — skipping (install with: pip install pytest)"
+    record 3 "pytest test_render"  "SKIP" "no pytest"
 else
     fail "pytest exited $RC — see $LOG"
     tail -n 20 "$LOG" | sed 's/^/    | /'
