@@ -113,7 +113,7 @@ def fetch_local(cfg: dict[str, Any]) -> str:
         return src.read_text(encoding="utf-8")
     except OSError as exc:
         fail(3, f"cannot read {src}: {exc}")
-    return ""  # unreachable
+    raise SystemExit(3)
 
 
 def fetch_git(cfg: dict[str, Any]) -> str:
@@ -157,7 +157,6 @@ def fetch_git(cfg: dict[str, Any]) -> str:
                 )
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
                 fail(4, f"git checkout {ref} failed (stderr suppressed for safety)")
-                _ = exc  # keep reference, never log content
 
         target = (tmp_path / "repo" / rel_path).resolve()
         repo_root = (tmp_path / "repo").resolve()
@@ -170,7 +169,7 @@ def fetch_git(cfg: dict[str, Any]) -> str:
             return target.read_text(encoding="utf-8")
         except OSError as exc:
             fail(3, f"cannot read {target.name}: {exc}")
-    return ""  # unreachable
+    raise SystemExit(3)
 
 
 def scan_for_secrets(text: str) -> list[str]:

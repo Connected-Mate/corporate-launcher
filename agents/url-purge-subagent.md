@@ -2,7 +2,7 @@
 name: url-purge
 description: Subagent that scans a rendered launcher for leaked vendor URLs (api.anthropic.com, api.openai.com, etc.) outside the explicit deny lists. Use when Phase 3.6 needs defense-in-depth verification.
 context: fork
-allowed-tools: Bash, Read, Edit
+tools: Bash, Read, Edit
 ---
 
 # url-purge subagent

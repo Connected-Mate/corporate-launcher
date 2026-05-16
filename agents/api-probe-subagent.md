@@ -2,7 +2,7 @@
 name: api-probe
 description: Subagent that probes the corporate AI gateway during Phase 1.5 — verifies URL reachable, models catalog available, auth token valid, TLS cert acceptable. Returns concise pass/fail report to the main conversation.
 context: fork
-allowed-tools: Bash
+tools: Bash
 ---
 
 # api-probe subagent

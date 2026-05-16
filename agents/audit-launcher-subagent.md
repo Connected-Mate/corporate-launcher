@@ -2,7 +2,7 @@
 name: audit-launcher
 description: Subagent that runs scripts/audit-launcher.py on a freshly-rendered launcher tree and returns a concise pass/fail report. Use when Phase 3.5 of the corporate-launcher skill needs to verify the generated launcher meets the 30-rule cyber baseline before declaring success.
 context: fork
-allowed-tools: Bash, Read, Glob
+tools: Bash, Read, Glob
 ---
 
 # Audit Launcher Subagent

@@ -9,14 +9,14 @@ compatibility:
 paths: []
 hooks:
   PostToolUse:
-    - matcher: "Bash"
+    - matcher: "Bash(python3:scripts/generate.py*)"
       command: "${CLAUDE_SKILL_DIR}/scripts/audit-launcher.py --post-tool"
 allowed-tools: [Read, Write, Edit, Bash(npm:*), Bash(git:*), Bash(python3:*), AskUserQuestion, Glob, Grep]
 ---
 
 # Corporate Launcher
 
-Build a secure, branded, organization-specific launcher around Claude Code, Codex CLI, or Gemini CLI so the creator can:
+Build a secure, branded, organization-specific launcher around Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline so the creator can:
 
 1. Run it on their own corporate machine without breaching cyber/legal policy.
 2. **Ship it to their team** — with the same gateway, the same cyber rules, and a curated set of bundled skills, on day one.

@@ -2,7 +2,7 @@
 name: compliance-docx
 description: Subagent that generates the corporate compliance Word document for RSSI/CISO/DPO review, summarizing the launcher's architecture, threat model, cyber controls, and audit findings. Use during Phase 4.5 when the user opted in via COMPLIANCE_DOCX=yes.
 context: fork
-allowed-tools: Bash, Read
+tools: Bash, Read
 ---
 
 # Compliance DOCX Subagent

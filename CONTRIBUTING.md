@@ -40,7 +40,7 @@ pytest -q
 Render a launcher locally for smoke testing:
 
 ```bash
-python3 scripts/generate.py --config examples/configs/sample-claude-litellm.json --out /tmp/test-launcher --dry-run
+python3 scripts/generate.py --config examples/configs/acme-claude-litellm.json --out /tmp/test-launcher --dry-run
 shellcheck /tmp/test-launcher/*.sh
 ```
 

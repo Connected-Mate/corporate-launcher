@@ -343,15 +343,14 @@ def run_dev_rules(
     print(f"  $ python3 {installer.name} --config {config_path} --launcher-dir {install_dir}")
     proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
 
-    # The installer prints a JSON-line summary on its last stdout line
-    # (``{"sections": N, ...}``) when it succeeds. Parse defensively.
+    # The installer prints a line of the form
+    # ``Installed <N> rules sections into <path>`` on success.
     written = 0
-    last_line = (proc.stdout or "").strip().splitlines()[-1:] or [""]
-    try:
-        summary = json.loads(last_line[0]) if last_line[0].startswith("{") else {}
-        written = int(summary.get("sections", 0))
-    except (json.JSONDecodeError, ValueError):
-        written = 0
+    for line in (proc.stdout or "").splitlines():
+        m = re.match(r"^Installed\s+(\d+)\s+rules sections\b", line)
+        if m:
+            written = int(m.group(1))
+            break
 
     if proc.returncode != 0:
         msg = (proc.stderr or proc.stdout or "").strip()[:200]
@@ -942,7 +941,7 @@ def main(argv: list[str] | None = None) -> int:
         "--dist-dir",
         type=Path,
         default=None,
-        help="Override the dist/ directory (default: <out>/../dist)",
+        help="Override the dist/ directory (default: <out>/dist)",
     )
     p.add_argument(
         "--dry-run",

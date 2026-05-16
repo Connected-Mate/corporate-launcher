@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Template rendering engine for Corporate Launcher.
+r"""Template rendering engine for Corporate Launcher.
 
 Substitutes ${VAR} placeholders with values from a JSON context file.
 Raises on unresolved variables (no silent empty substitution).
