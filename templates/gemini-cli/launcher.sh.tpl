@@ -28,6 +28,14 @@ GM_VERTEX_PROJECT="${GM_VERTEX_PROJECT}"
 GM_VERTEX_LOCATION="${GM_VERTEX_LOCATION}"
 GM_AUTH_MODE="${GM_AUTH_MODE}"           # tpl: ADC | api-key
 
+# --- Early flag handling (no gates needed) ------------------------------------
+case "$\{1:-\}" in
+    --cost)
+        shift
+        exec python3 "$INSTALL_DIR/scripts/cost-tracker.py" "$\{1:-session\}"
+        ;;
+esac
+
 # --- Network config -----------------------------------------------------------
 export VPN_REQUIRED="${VPN_REQUIRED}"
 export VPN_PROBE_URL="${VPN_PROBE_URL}"

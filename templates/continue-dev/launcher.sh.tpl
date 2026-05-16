@@ -260,6 +260,7 @@ Usage:
   ${CORP_SLUG} --version      Show version
   ${CORP_SLUG} --status       Check VPN, gateway, IDE extension, config
   ${CORP_SLUG} --set-key      Reset / change the API token
+  ${CORP_SLUG} --cost         Local cost log (session / today / history)
   ${CORP_SLUG} --uninstall    Run the uninstaller
 
 The launcher writes \$\{HOME\}/.continue/config.yaml. Any existing
@@ -307,6 +308,10 @@ cmd_set_key() {
     info "~/.continue/config.yaml refreshed."
 }
 
+cmd_cost() {
+    python3 "$INSTALL_DIR/scripts/cost-tracker.py" "$\{1:-session\}"
+}
+
 cmd_uninstall() {
     bash "$INSTALL_DIR/uninstall.sh"
 }
@@ -324,6 +329,7 @@ main() {
         --version)        cmd_version; exit 0 ;;
         --status)         setup_isolation >/dev/null 2>&1 || true; cmd_status; exit 0 ;;
         --set-key)        setup_isolation >/dev/null 2>&1 || true; cmd_set_key; exit 0 ;;
+        --cost)           shift; cmd_cost "$@"; exit 0 ;;
         --uninstall)      cmd_uninstall; exit 0 ;;
     esac
 

@@ -191,6 +191,7 @@ Usage:
   ${CORP_SLUG} --version      Show version
   ${CORP_SLUG} --status       Check VPN, gateway, isolation
   ${CORP_SLUG} --set-key      Reset / change the API token
+  ${CORP_SLUG} --cost         Local cost log (session / today / history)
   ${CORP_SLUG} --dry-run      Print resolved env and exit (no aider run)
   ${CORP_SLUG} --uninstall    Run the uninstaller
 
@@ -231,6 +232,10 @@ cmd_set_key() {
     printf '$\{GREEN\}[OK]$\{RESET\} token saved.\n'
 }
 
+cmd_cost() {
+    python3 "$INSTALL_DIR/scripts/cost-tracker.py" "$\{1:-session\}"
+}
+
 cmd_uninstall() {
     bash "$INSTALL_DIR/uninstall.sh"
 }
@@ -248,6 +253,7 @@ main() {
         --version)        cmd_version; exit 0 ;;
         --status)         cmd_status; exit 0 ;;
         --set-key)        cmd_set_key; exit 0 ;;
+        --cost)           shift; cmd_cost "$@"; exit 0 ;;
         --uninstall)      cmd_uninstall; exit 0 ;;
     esac
 

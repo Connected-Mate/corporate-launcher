@@ -186,7 +186,9 @@ This section captures the security context the launcher must reference: the cybe
 | `TOKEN_PORTAL_URL` | Where do users mint personal tokens for the gateway? (URL) | url | empty |
 | `TOKEN_TTL_DAYS` | How many days is a personal token valid for? (shown in onboarding) | number | `30` |
 | `COST_CURRENCY` | Which currency should cost reporting use? Choose: `EUR`, `USD`, or `GBP` | enum | `EUR` |
-| `COST_TRACKING_ENABLED` | Track token cost per session and emit a per-CLI ledger? | yes/no | yes |
+| `COST_TRACKING_ENABLED` | Track token cost per session and emit a per-CLI ledger? (default on — recommended for every launcher) | yes/no | yes |
+| `COST_ALERT_THRESHOLD` | Daily cost threshold (in `COST_CURRENCY`) that triggers a non-fatal warning when reached. `0` disables. | number | `0` |
+| `COST_TENANT_ENDPOINT` | Optional HTTPS endpoint to POST daily aggregated totals to (`<launcher> --cost push`). Empty disables. | url | empty |
 | `BLOCK_TELEMETRY` | Disable upstream telemetry (`STATSIG_DISABLED`, `DISABLE_TELEMETRY=1`, ...)? | yes/no | yes |
 | `BLOCK_AUTO_UPDATE` | Lock the CLI to its pinned version (no upstream auto-update)? | yes/no | yes |
 | `SELF_AUDIT_ENABLED` | Run a self-audit on the generated launcher before finishing? | yes/no | yes |

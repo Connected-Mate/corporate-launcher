@@ -305,6 +305,17 @@
       "enum": ["EUR", "USD", "GBP", "CHF", "JPY", "CAD", "AUD"],
       "default": "EUR"
     },
+    "COST_ALERT_THRESHOLD": {
+      "type": "string",
+      "default": "0",
+      "description": "Daily cost alert threshold in COST_CURRENCY units. 0 disables. Numeric string for template substitution.",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$"
+    },
+    "COST_TENANT_ENDPOINT": {
+      "type": "string",
+      "default": "",
+      "description": "Optional HTTPS endpoint for daily cost push (`<launcher> --cost push`). Empty disables."
+    },
     "PROMPT_FILTER_ENABLED": { "$ref": "#/$defs/yesNo", "default": "yes" },
 
     "$comment_section_6": {

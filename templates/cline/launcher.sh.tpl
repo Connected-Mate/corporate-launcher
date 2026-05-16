@@ -321,6 +321,7 @@ Usage:
   ${CORP_SLUG} --version       Show version
   ${CORP_SLUG} --status        Check VPN, gateway, IDE, extension, settings
   ${CORP_SLUG} --set-key       Reset / change the API token
+  ${CORP_SLUG} --cost          Local cost log (session / today / history)
   ${CORP_SLUG} --refresh       Re-merge cline.* keys into the IDE settings
   ${CORP_SLUG} --uninstall     Run the uninstaller
 
@@ -381,6 +382,10 @@ cmd_refresh() {
     install_global_rules
 }
 
+cmd_cost() {
+    python3 "$INSTALL_DIR/scripts/cost-tracker.py" "$\{1:-session\}"
+}
+
 cmd_uninstall() {
     bash "$INSTALL_DIR/uninstall.sh"
 }
@@ -399,6 +404,7 @@ main() {
         --status)         setup_isolation >/dev/null 2>&1 || true; detect_vscode_family || true; cmd_status; exit 0 ;;
         --set-key)        setup_isolation >/dev/null 2>&1 || true; detect_vscode_family || true; cmd_set_key; exit 0 ;;
         --refresh)        cmd_refresh; exit 0 ;;
+        --cost)           shift; cmd_cost "$@"; exit 0 ;;
         --uninstall)      cmd_uninstall; exit 0 ;;
     esac
 

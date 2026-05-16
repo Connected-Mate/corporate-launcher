@@ -177,6 +177,7 @@ Launcher flags:
   --status        print resolved environment (no secret) and exit
   --dry-run       same as --status, then exit 0 without running codex
   --set-key       prompt for a new API token and store it
+  --cost          local cost log (session / today / history)
   --help          show this help
 
 Any other argument is forwarded to the underlying \`codex\` binary.
@@ -205,6 +206,11 @@ main() {
             exit 0 ;;
         --set-key)
             prompt_for_api_key
+            exit $?
+            ;;
+        --cost)
+            shift
+            python3 "$INSTALL_DIR/scripts/cost-tracker.py" "$\{1:-session\}"
             exit $?
             ;;
     esac
