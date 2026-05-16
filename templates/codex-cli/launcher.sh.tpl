@@ -83,6 +83,7 @@ show_banner() {
     [ -t 1 ] || return 0
     printf "$\{C_BRAND\}%s$\{C_RESET\} $\{C_DIM\}v%s — powered by %s$\{C_RESET\}\n" \
         "${CORP_NAME}" "$LAUNCHER_VERSION" "${CORP_POWERED_BY}"
+    printf "\n  $\{C_DIM\}Proudly made from France with $\{C_RESET\}$\{C_RED\}❤️$\{C_RESET\}\n"
 }
 
 # tpl: ---------------------------------------------------------------------

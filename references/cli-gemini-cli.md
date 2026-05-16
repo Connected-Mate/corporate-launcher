@@ -94,7 +94,7 @@ Token cache lives at `~/.config/gcloud/application_default_credentials.json`. Th
 
 ## 5. EU data residency
 
-For SNCF / EU-regulated tenants, pin a European region:
+For ACME / EU-regulated tenants, pin a European region:
 
 ```bash
 GOOGLE_CLOUD_LOCATION=europe-west4   # Netherlands (recommended for GPU+Gemini)
@@ -203,7 +203,7 @@ Why both: `settings.json` covers the in-app analytics SDK; the env var also gate
 
 Gemini CLI supports MCP via the `mcpServers` map in `settings.json`. Two corporate posture options:
 
-**Posture A — closed (default for SNCF):** `mcpServers: {}` and `mcp.allowed: []`. Users cannot add MCP servers from inside the CLI because `admin.secureModeEnabled: true` blocks live settings edits.
+**Posture A — closed (default for ACME):** `mcpServers: {}` and `mcp.allowed: []`. Users cannot add MCP servers from inside the CLI because `admin.secureModeEnabled: true` blocks live settings edits.
 
 **Posture B — corporate allowlist:** ship a fixed map and lock it via `admin.mcp.requiredConfig` (admin section). Example:
 
@@ -212,7 +212,7 @@ Gemini CLI supports MCP via the `mcpServers` map in `settings.json`. Two corpora
   "internal-jira": {
     "command": "node",
     "args": ["/opt/corp/mcp/jira/index.js"],
-    "env": { "JIRA_BASE_URL": "https://jira.internal.acme.fr" }
+    "env": { "JIRA_BASE_URL": "https://jira.internal.acme.example" }
   }
 },
 "mcp": { "allowed": ["internal-jira"] },

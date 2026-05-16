@@ -82,7 +82,7 @@ show_banner() {
     printf '$\{ORANGE\}$\{BOLD\}  ║  %-44s ║$\{RESET\}\n' "${CORP_NAME}"
     printf '$\{ORANGE\}$\{BOLD\}  ║  %-44s ║$\{RESET\}\n' "Powered by ${CORP_POWERED_BY}"
     printf '$\{ORANGE\}$\{BOLD\}  ╚═══════════════════════════════════════════════╝$\{RESET\}\n'
-    printf '\n'
+    printf '\n  $\{DIM\}Proudly made from France with $\{RESET\}$\{RED\}❤️$\{RESET\}\n'
 }
 
 # =====================================================================

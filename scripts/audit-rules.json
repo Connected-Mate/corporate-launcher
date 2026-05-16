@@ -2,7 +2,7 @@
   "version": 1,
   "description": "Audit rules for corporate-launcher rendered output. Consumed by audit-launcher.py. Add new rules by appending to the 'rules' array; no Python changes required.",
   "variables": {
-    "CORP_SLUG": "Slug name of the corporate launcher binary (e.g. 'patrick-code').",
+    "CORP_SLUG": "Slug name of the corporate launcher binary (e.g. 'acme-copilot').",
     "FORBIDDEN_TERMS": "Terms that must only appear in BRANDING (e.g. 'Claude', 'Anthropic', 'OpenAI', 'Gemini').",
     "VPN_REQUIRED": "yes|no - whether VPN check is mandatory.",
     "ACCEPT_TLS_INSPECTION": "yes|no - whether corporate MITM TLS proxy is trusted.",
@@ -246,7 +246,7 @@
       "pattern_from_var": "FORBIDDEN_TERMS",
       "in_files": ["**/*"],
       "exclude_in_files": ["BRANDING.md", "LICENSE", "CHANGELOG.md", "references/**"],
-      "remediation": "Replace vendor name with corporate brand (e.g. 'Patrick Code') outside BRANDING."
+      "remediation": "Replace vendor name with corporate brand (e.g. 'Acme Copilot') outside BRANDING."
     },
     {
       "id": "branding-contains-rebrand",

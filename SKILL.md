@@ -1,8 +1,17 @@
 ---
 name: corporate-launcher
-description: Generates a secure, branded, organization-specific launcher that wraps Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline onto a corporate AI gateway, then helps the user distribute it to their team. Triggers when a user says their company "does not authorize" Claude / Codex / Gemini / Cursor, asks for a white-label CLI for their team, needs a wrapper for AWS Bedrock / Azure OpenAI / Vertex AI / LiteLLM, must enforce corporate proxy + SSL inspection + custom CA, or wants to bundle a set of internal skills for colleagues. Trigger phrases include "corporate launcher", "wrap claude code", "wrap codex", "wrap gemini", "white-label cursor", "white-label cline", "internal AI CLI", "bedrock gateway", "azure openai cli", "vertex cli", "ship to my team", "internal copilot". Make sure to use this skill whenever the user mentions wanting to wrap, white-label, or deploy an AI coding CLI inside their organization — even if they don't explicitly name the launcher pattern.
-allowed-tools: Read, Write, Edit, Bash, AskUserQuestion, Glob, Grep
-when_to_use: Invoke when an employee of a regulated org (bank, telco, public sector, defense, healthcare) needs an AI coding CLI but cannot use the vendor's public endpoint. The deliverable is always a runnable, branded launcher plus a distribution kit for colleagues — not just shell scripts or a one-off API call. Pair with a corporate gateway (Bedrock, Azure OpenAI, Vertex, LiteLLM).
+description: Generates a secure, branded, organization-specific launcher that wraps Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline onto a corporate AI gateway, then helps the user distribute it to their team. Trigger phrases include "corporate launcher", "wrap claude code", "wrap codex", "wrap gemini", "white-label cursor", "white-label cline", "internal AI CLI", "bedrock gateway", "azure openai cli", "vertex cli", "ship to my team", "internal copilot". Use this skill whenever a user needs to wrap a vendor CLI onto a corporate AI gateway.
+when_to_use: Invoke when an employee of a regulated org (bank, telco, public sector, defense, healthcare) needs an AI coding CLI but cannot use the vendor's public endpoint. Use when a user says their company "does not authorize" Claude / Codex / Gemini / Cursor, asks for a white-label CLI for their team, needs a wrapper for AWS Bedrock / Azure OpenAI / Vertex AI / LiteLLM, must enforce corporate proxy + SSL inspection + custom CA, or wants to bundle a set of internal skills for colleagues. The deliverable is always a runnable, branded launcher plus a distribution kit — not just shell scripts or a one-off API call. Pair with a corporate gateway (Bedrock, Azure OpenAI, Vertex, LiteLLM).
+version: "0.6.0"
+license: "MIT"
+compatibility:
+  claude-code: ">=2.6.0"
+paths: []
+hooks:
+  PostToolUse:
+    - matcher: "Bash"
+      command: "${CLAUDE_SKILL_DIR}/scripts/audit-launcher.py --post-tool"
+allowed-tools: [Read, Write, Edit, Bash(npm:*), Bash(git:*), Bash(python3:*), AskUserQuestion, Glob, Grep]
 ---
 
 # Corporate Launcher
@@ -33,6 +42,8 @@ Anti-trigger: do **not** trigger for a personal/hobby setup, a one-off API call,
 
 ## Workflow (always follow in order)
 
+> **Posture:** This skill writes to disk and may invoke `gh repo create --push`. Set `user-invocable: true` to require explicit `/corporate-launcher` invocation in environments where automatic side-effects must be avoided.
+
 ### Phase 0 — Confirm intent (skip if obvious)
 
 If the user only said "wrap claude for my company" with no detail, ask 1-2 quick clarifying questions via `AskUserQuestion`:
@@ -62,9 +73,17 @@ If the user replies "I don't know" to a network/cyber question, mark it `unknown
 
 > Why: catches typos in URL, expired tokens, missing models, TLS issues before the user invests time in the rest of the interview.
 
-> What: invokes `scripts/api-probe.py` with the user's URL + token. Reports reachable / unreachable, models catalog, latency, TLS cert.
+> What: invokes `${CLAUDE_SKILL_DIR}/scripts/api-probe.py` with the user's URL + token. Reports reachable / unreachable, models catalog, latency, TLS cert.
 
 > If the probe fails, the skill should pause and ask: "Continue anyway, or revise the answer?" — never silently proceed with a known-broken gateway.
+
+### Phase 1.6 — Probe with load test (optional)
+
+> Gated by `LOAD_TEST_ENABLED=yes`. Skip otherwise.
+
+> What: invokes `${CLAUDE_SKILL_DIR}/scripts/load-test.py` to run a sustained-throughput and concurrency probe against the gateway. Reports requests/sec, p50/p95/p99 latency, error rate, and concurrent-stream ceiling.
+
+> Use this when the launcher will be shipped to a large team and the RSSI/CISO needs evidence the gateway can absorb the load before sign-off.
 
 ### Phase 2 — Validate
 
@@ -75,11 +94,23 @@ Before generating anything:
 
 Don't generate without explicit confirmation.
 
+### Phase 2.5 — Inject corporate dev rules (NEW v0.6)
+
+> Why: the launcher must carry the org's coding standards (review checklists, naming conventions, security patterns) alongside the cyber baseline, so colleagues inherit them on day one.
+
+> What: invokes `${CLAUDE_SKILL_DIR}/scripts/dev-rules-installer.py` to fetch the org's dev rules and write `dev-rules.md` next to `BRANDING.md` in the rendered tree. The installer supports **4 source modes**:
+> - `none` — skip; no dev rules file written.
+> - `inline` — user pastes the rules during the interview; written verbatim.
+> - `local` — read from a local path on the user's machine.
+> - `git` — clone/fetch from an internal git URL (HTTPS + token or SSH).
+
+> The launcher appends `dev-rules.md` to its `--append-system-prompt` chain so every prompt carries the corporate dev conventions.
+
 ### Phase 3 — Generate the launcher
 
 For each selected CLI:
 1. Pick the matching folder under `templates/<cli-id>/`
-2. Substitute every `${VAR}` with the answers via `scripts/render.py`
+2. Substitute every `${VAR}` with the answers via `${CLAUDE_SKILL_DIR}/scripts/render.py`
 3. Write the rendered files into the install path
 4. Render the `shared/` modules once (VPN check, proxy detect, cyber rules, cost tracker, prompt filter, strip-proxy if needed)
 5. Render the **skills bundle** — clone or copy the chosen skills under `<install>/skills/`
@@ -90,17 +121,17 @@ For each selected CLI:
 
 > Why: the user may not have known every cyber requirement. The skill must verify its own output before declaring success.
 
-> What: runs `scripts/audit-launcher.py` against the rendered tree. 30+ rules (no vendor URLs, no plain secrets, VPN check present, telemetry kill switches all set, etc.). Prints findings ranked P0/P1/P2.
+> What: runs `${CLAUDE_SKILL_DIR}/scripts/audit-launcher.py` against the rendered tree. 30+ rules (no vendor URLs, no plain secrets, VPN check present, telemetry kill switches all set, etc.). Prints findings ranked P0/P1/P2.
 
 > The skill should present findings interactively: "Here are 3 things I noticed — want me to fix them, ask you, or leave as-is?"
 
 ### Phase 3.6 — URL purge sweep
 
-> Defense in depth: a second pass that specifically catches vendor URLs leaked anywhere outside the explicit deny lists.
+> Defense in depth: a second pass that specifically catches vendor URLs leaked anywhere outside the explicit deny lists. Runs `${CLAUDE_SKILL_DIR}/scripts/url-purge.py`.
 
 ### Phase 3.7 — Pixel-art banner
 
-> Generate the launcher's startup banner via `scripts/pixel-art-logo.py`. Saved to `<install_dir>/banner.txt`; the launcher's show_banner() prints it at every launch.
+> Generate the launcher's startup banner via `${CLAUDE_SKILL_DIR}/scripts/pixel-art-logo.py`. Saved to `<install_dir>/banner.txt`; the launcher's show_banner() prints it at every launch.
 
 ### Phase 4 — Generate the distribution kit
 
@@ -125,7 +156,7 @@ Print:
 - the **distribution artifact** (repo URL, tarball path, or one-liner) the user shares with their team
 - a checklist of follow-ups (API key not yet set, VPN required, RSSI sign-off pending)
 
-> "Made for friends · Made from France with ❤️"
+> "Proudly made from France with ❤️"
 
 ---
 
@@ -143,6 +174,7 @@ Print:
 - `references/compliance-docx.md` — 10-section Word document for RSSI/CISO sign-off
 - `references/pixel-art-logo.md` — startup banner generator saved to `<install_dir>/banner.txt`
 - `references/load-testing.md` — sustained-throughput and concurrency checks for the gateway
+- `references/dev-rules.md` — corporate dev rules injection (4 source modes)
 - `references/examples/` — three filled-out examples (Claude/LiteLLM, Codex/Azure, Gemini/Vertex)
 
 Read only what you need for the user's CLI + backend + distribution combo.
@@ -171,7 +203,7 @@ Each `templates/<cli-id>/` contains:
 
 ## Rendering rules
 
-`scripts/render.py` does plain `${VAR}` substitution.
+`${CLAUDE_SKILL_DIR}/scripts/render.py` does plain `${VAR}` substitution.
 - All variables are uppercase snake_case (`CORP_NAME`, `LLM_PRIMARY_URL`, `PROXY_HOST`).
 - Missing variable raises — never silently substitute empty string.
 - A `${...}` that should stay literal in the output (e.g. shell `${HOME}`) is escaped as `$\{HOME\}` in the template and unescaped at render time.

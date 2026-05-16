@@ -149,5 +149,6 @@ fi
 
 corp_info "Backend: $GM_BACKEND | Model: $GM_PRIMARY_MODEL"
 [ "$GM_BACKEND" = "vertex" ] && corp_info "Project: $GM_VERTEX_PROJECT | Region: $GM_VERTEX_LOCATION"
+printf '\n  %sProudly made from France with %s❤️%s\n' "$DIM" "$RED" "$RESET"
 
 exec gemini "$@"

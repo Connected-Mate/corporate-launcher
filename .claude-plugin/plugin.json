@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "author": {
+    "name": "Alexandre Cormeraie",
+    "url": "https://www.linkedin.com/in/alex-cormeraie/"
+  },
+  "description": "Generate secure, branded launchers wrapping Claude Code, Codex, Gemini, Cursor, or Cline onto a corporate AI gateway.",
+  "homepage": "https://github.com/Connected-Mate/corporate-launcher",
+  "keywords": [
+    "corporate",
+    "launcher",
+    "white-label",
+    "claude-code",
+    "codex",
+    "gemini",
+    "cline",
+    "cursor"
+  ],
+  "license": "MIT",
+  "name": "corporate-launcher",
+  "repository": "https://github.com/Connected-Mate/corporate-launcher",
+  "skills": ["./"],
+  "version": "0.6.0"
+}

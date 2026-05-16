@@ -72,9 +72,9 @@ REQUIRED_SECTIONS: tuple[str, ...] = (
 def minimal_config(tmp_path: Path) -> Path:
     """Write a minimal but valid config JSON and return its path."""
     cfg: dict[str, Any] = {
-        "corp_name": "SNCF",
-        "cyber_authority": "Direction Cybersecurite SNCF",
-        "cc_primary_url": "https://socle.ia.sncf.fr",
+        "corp_name": "ACME",
+        "cyber_authority": "ACME Corporate Security Office",
+        "cc_primary_url": "https://gateway.acme.example",
         "wrapped_cli": "claude-code",
         "distribution_mode": "tarball",
     }
@@ -190,9 +190,9 @@ def test_placeholders_are_substituted(
         assert raw not in body, f"unresolved placeholder leaked: {raw}"
 
     # Their resolved values must appear at least once each.
-    assert "SNCF" in body
-    assert "Direction Cybersecurite SNCF" in body
-    assert "https://socle.ia.sncf.fr" in body
+    assert "ACME" in body
+    assert "ACME Corporate Security Office" in body
+    assert "https://gateway.acme.example" in body
 
 
 # --------------------------------------------------------------------------- #

@@ -65,3 +65,7 @@ ${CORP_LICENSE_NOTE}.
 ---
 
 The cyber rules in `cyber-rules.md` are installed alongside this file (as `10-${CORP_SLUG}-cyber.md` in the global Cline rules directory) and have the same authority. When both files are toggled "on" in the Cline rules panel, their contents are concatenated into the system prompt at task start.
+
+---
+
+*${CORP_NAME} — Proudly made from France with ❤️*

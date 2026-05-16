@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "description": "Vendor URLs the corporate launcher must NEVER contact directly. Used by url-purge.py to scan and flag direct vendor calls that bypass the Socle IA SNCF proxy.",
-  "maintainer": "TGV Europe - Patrick Code team",
+  "description": "Vendor URLs the corporate launcher must NEVER contact directly. Used by url-purge.py to scan and flag direct vendor calls that bypass the corporate AI gateway.",
+  "maintainer": "corporate-launcher maintainers",
   "blocked_domains": [
-    {"domain": "api.anthropic.com", "vendor": "Anthropic", "category": "llm-api", "reason": "Anthropic public API - must route via Socle IA SNCF"},
-    {"domain": "claude.ai", "vendor": "Anthropic", "category": "llm-web", "reason": "Anthropic consumer chat - forbidden by SNCF cyber policy"},
+    {"domain": "api.anthropic.com", "vendor": "Anthropic", "category": "llm-api", "reason": "Anthropic public API - must route via corporate gateway"},
+    {"domain": "claude.ai", "vendor": "Anthropic", "category": "llm-web", "reason": "Anthropic consumer chat - forbidden by corporate cyber policy"},
     {"domain": "console.anthropic.com", "vendor": "Anthropic", "category": "llm-console", "reason": "Anthropic billing console - bypasses corp SSO"},
     {"domain": "platform.claude.com", "vendor": "Anthropic", "category": "llm-platform", "reason": "Anthropic platform - bypasses Socle IA"},
     {"domain": "statsig.anthropic.com", "vendor": "Anthropic", "category": "telemetry", "reason": "Anthropic Statsig feature-flag telemetry"},
@@ -171,8 +171,8 @@
     "docs/*"
   ],
   "allowed_corp_endpoints": [
-    {"domain": "socle.ia.sncf.fr", "vendor": "SNCF", "reason": "Official Socle IA SNCF proxy - REQUIRED endpoint"},
-    {"domain": "nexus.sncf.fr", "vendor": "SNCF", "reason": "Corp Nexus artifact mirror"},
+    {"domain": "gateway.acme.example", "vendor": "Acme Corp", "reason": "Official corporate AI gateway - REQUIRED endpoint (example placeholder)"},
+    {"domain": "nexus.acme.example", "vendor": "Acme Corp", "reason": "Corp Nexus artifact mirror (example placeholder)"},
     {"domain": "github.com", "vendor": "GitHub", "reason": "Public git host (Copilot endpoints flagged separately)"},
     {"domain": "api.github.com", "vendor": "GitHub", "reason": "GitHub API for gh CLI / PR ops"},
     {"domain": "raw.githubusercontent.com", "vendor": "GitHub", "reason": "Raw content (non-Copilot)"}

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-05-16
+
+### Added
+- **Corporate dev rules injection** — new Phase 2.5 lets the creator inject company-specific coding conventions, naming rules, framework preferences, banned patterns. 4 source modes: none / inline (paste) / local (file) / git (private repo). Auto-merged into the launcher's system prompt alongside cyber-rules.md. Includes scripts/dev-rules-installer.py, templates/shared/dev-rules.md.tpl, references/dev-rules.md, tests/test_dev_rules.py.
+- **Plugin manifest** — `.claude-plugin/plugin.json` makes the skill marketplace-ready (Claude Code 2.6+).
+- **Subagent definitions** — `agents/api-probe.md`, `audit-launcher.md`, `url-purge.md`, `compliance-docx.md` with `context: fork` so Phase 1.5/3.5/3.6/4.5 can run in isolation.
+- **${CLAUDE_SKILL_DIR}** convention — scripts referenced via this env var so the skill works from any invocation site.
+- **integrations/cline/README.md** + **integrations/cursor/README.md** — onboarding docs for the 2 hosts that previously lacked them.
+- tests/test_plugin_manifest.py — validates plugin.json structure.
+- References to internal contact / RSSI in interview Section 8.5 deduped.
+
+### Changed
+- SKILL.md frontmatter extended with `when_to_use`, `version`, `license`, `compatibility`, `paths`, `hooks`. `allowed-tools.Bash` narrowed to `npm/git/python3`.
+- Phase numbering reconciled between SKILL.md and generate.py (1.5/1.6/2.5/3.5/3.6/3.7/4.5).
+- README.md fixed: wrong script names corrected (`build-compliance-docx.py`, `pixel-art-logo.py`), new "Corporate dev rules" section added.
+- **Footer** changed from "Made for friends" to **"Proudly made from France with ❤️"** across README, BRANDING, banner, cyber-rules.
+
+### Fixed
+- Duplicate `RSSI_CLEARANCE_REF` in interview-flow (was in both Section 5 and 8.5)
+- Broken relative link `templates/dist-readme/...` → `templates/dist/dist-readme/...` in distribution-modes.md
+- Brand placeholders re-leaked in 7 files (security-patterns, pixel-art-logo, compliance-docx, cli-gemini-cli, test_compliance_docx, test_url_purge) — re-scrubbed
+- Stale `dist/corporate-launcher-0.3.0.skill` removed from git tracking
+- Test reports clutter moved to `tests/reports/` subfolder
+
+### Note
+This release closes the gaps surfaced by the second-pass audit (tests/AUDIT_V2.md + tests/AUDIT_V2_SELF.md). The skill is now marketplace-ready, structurally canonical, and audit-grade.
+
 ## [0.5.0] — 2026-05-16
 
 ### Added — five-feature audit-grade pass
@@ -117,8 +144,10 @@ This release moves the skill from "produces a working launcher" to "produces an 
 - Per-CLI launcher + install/uninstall templates under [`templates/{claude-code,codex-cli,gemini-cli,aider,opencode,continue-dev}/`](templates/).
 - `BRANDING.md` template with custom system-prompt addendum, banner color, terminal title, forbidden-terms list.
 
-[Unreleased]: https://github.com/your-org/corporate-launcher/compare/v0.4.0...HEAD
-[0.4.0]: https://github.com/your-org/corporate-launcher/compare/v0.3.0...v0.4.0
-[0.3.0]: https://github.com/your-org/corporate-launcher/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/your-org/corporate-launcher/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/your-org/corporate-launcher/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Connected-Mate/corporate-launcher/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Connected-Mate/corporate-launcher/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/Connected-Mate/corporate-launcher/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/Connected-Mate/corporate-launcher/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/Connected-Mate/corporate-launcher/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/Connected-Mate/corporate-launcher/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/Connected-Mate/corporate-launcher/releases/tag/v0.1.0

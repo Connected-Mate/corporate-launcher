@@ -60,21 +60,23 @@ In one session, the skill:
 
 3. **Validates** the answers, defaults the unknowns, shows you a one-screen plan.
 
-4. **Generates the launcher tree** on your machine: wrapper binary, install + uninstall, BRANDING.md, 15-control cyber rules, CLI-native config, shared modules, bundled skills.
+4. **Injects your corporate dev rules** — coding conventions, naming, framework preferences, banned patterns. From inline paste, local file, or your private git repo. The AI now matches your house style on day 1.
 
-5. **Self-audits the generated launcher** — runs 30+ rules across the rendered tree (no vendor URLs, no plain secrets, VPN check present, telemetry kill switches set, FORBIDDEN_TERMS appear only in BRANDING.md). Presents findings P0/P1/P2.
+5. **Generates the launcher tree** on your machine: wrapper binary, install + uninstall, BRANDING.md, 15-control cyber rules, CLI-native config, shared modules, bundled skills.
 
-6. **Sweeps for leaked vendor URLs** — defense in depth: catches any reference to api.anthropic.com / api.openai.com / etc. outside the explicit deny lists. Optional auto-patch.
+6. **Self-audits the generated launcher** — runs 30+ rules across the rendered tree (no vendor URLs, no plain secrets, VPN check present, telemetry kill switches set, FORBIDDEN_TERMS appear only in BRANDING.md). Presents findings P0/P1/P2.
 
-7. **Renders a pixel-art banner** in your brand color — each launcher starts up with its own ASCII identity. 6 styles available, auto-pick based on terminal width.
+7. **Sweeps for leaked vendor URLs** — defense in depth: catches any reference to api.anthropic.com / api.openai.com / etc. outside the explicit deny lists. Optional auto-patch.
 
-8. **Wires the shell** with an idempotent block. Stores the token in the OS keychain.
+8. **Renders a pixel-art banner** in your brand color — each launcher starts up with its own ASCII identity. 6 styles available, auto-pick based on terminal width.
 
-9. **Generates the distribution kit** — git repo scaffold, install one-liner, or tarball + checksum.
+9. **Wires the shell** with an idempotent block. Stores the token in the OS keychain.
 
-10. **Produces a compliance .docx** — a 10-section Word document ready to send to your RSSI/CISO/DPO. Architecture, threat model, cyber controls, network perimeter, audit log, offboarding, sign-off section pre-filled.
+10. **Generates the distribution kit** — git repo scaffold, install one-liner, or tarball + checksum.
 
-Nothing is irreversible. The uninstaller restores every file. Made for friends · Made from France with ❤️.
+11. **Produces a compliance .docx** — a 10-section Word document ready to send to your RSSI/CISO/DPO. Architecture, threat model, cyber controls, network perimeter, audit log, offboarding, sign-off section pre-filled.
+
+Nothing is irreversible. The uninstaller restores every file. Proudly made from France with ❤️.
 
 ---
 
@@ -143,6 +145,18 @@ Or ask in natural language — the skill description triggers on phrases like *"
 ```
 
 At runtime the wrapper sources the shared modules, sets ~20 env vars, optionally starts a strip-proxy on `127.0.0.1:9876` (Bedrock/LiteLLM only), then `exec`s the underlying CLI with `--append-system-prompt-file BRANDING.md`. Nothing is globally installed. Every env var is scoped to the launcher process. The system trust store is never modified.
+
+---
+
+## Corporate dev rules
+
+Your company has coding conventions. The launcher picks them up.
+
+In the interview, you choose how to source them: paste them inline, point at a local file, or pull from a private git repo. They're injected into the launcher's system prompt alongside the 15 cyber controls.
+
+Example uses: *"always use FastAPI, never Flask"*, *"snake_case for Python files"*, *"Tailwind, not styled-components"*, *"no jQuery"*, *"Conventional Commits for git messages"*, *"all PRs need an ADR for new services"*.
+
+See [`references/dev-rules.md`](references/dev-rules.md) for the 4 source modes and how to keep them updated.
 
 ---
 
@@ -229,7 +243,7 @@ Each file contains the JSON config + a "why those choices" commentary. Reading t
 
 ## Quality & testing
 
-Every change to the skill is exercised by a multi-stage local pipeline, plus a suite of v0.5 tools you can run against any generated launcher. Run any of them on demand:
+Every change to the skill is exercised by a multi-stage local pipeline, plus a suite of v0.6 tools you can run against any generated launcher. Run any of them on demand:
 
 ```bash
 bash scripts/smoke-test.sh              # end-to-end: generate a launcher from the ACME example, then run it
@@ -238,13 +252,14 @@ python3 scripts/check-skill-quality.py  # programmatic SKILL.md audit (frontmatt
 python3 -m pytest tests/                # unit + integration tests for render.py and generate.py (16 + N cases)
 python3 tests/branding/run_eval.py      # branding eval — 30 trap prompts checking for vendor-name leaks
 
-# v0.5 tools — operate on a rendered launcher tree
-python3 scripts/audit-launcher.py       # 30+ post-render rules, P0/P1/P2 findings on the generated tree
-python3 scripts/url-purge.py            # sweep + optional auto-patch of leaked vendor URLs
-python3 scripts/compliance-docx.py      # generate the 10-section RSSI/CISO/DPO Word document
-python3 scripts/api-probe.py            # probe the gateway URL: reachability, models, auth, TLS cert
-python3 scripts/load-test.py            # smoke load test against the gateway (latency, throughput)
-python3 scripts/pixel-art.py            # render the ASCII brand banner (6 styles, terminal-width aware)
+# v0.6 tools — operate on a rendered launcher tree
+python3 scripts/audit-launcher.py            # 30+ post-render rules, P0/P1/P2 findings on the generated tree
+python3 scripts/url-purge.py                 # sweep + optional auto-patch of leaked vendor URLs
+python3 scripts/build-compliance-docx.py     # generate the 10-section RSSI/CISO/DPO Word document
+python3 scripts/api-probe.py                 # probe the gateway URL: reachability, models, auth, TLS cert
+python3 scripts/load-test.py                 # smoke load test against the gateway (latency, throughput)
+python3 scripts/pixel-art-logo.py            # render the ASCII brand banner (6 styles, terminal-width aware)
+python3 scripts/dev-rules-installer.py       # install/refresh corporate dev rules (inline, file, or git source)
 ```
 
 Use `--strict` on `check-skill-quality.py` for a non-zero exit code on any miss (CI-friendly). Reports live under [`tests/`](tests/) (`SMOKE_REPORT.md`, `AUDIT_REPORT.md`, `SCRUB_REPORT.md`, `SYNC_REPORT.md`).
@@ -305,6 +320,8 @@ Issues, PRs, and new CLI templates welcome. If you ship a Corporate Launcher in 
 
 <div align="center">
 
-**Made for friends · Made from France with <span style="color:#e11d48">❤️</span>**
+**Proudly made from France with ❤️**
+
+*by [Alexandre Cormeraie](https://www.linkedin.com/in/alex-cormeraie/) — [ConnectedMate](https://github.com/Connected-Mate)*
 
 </div>

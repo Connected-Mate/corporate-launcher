@@ -194,16 +194,13 @@ show_corp_banner() {
 
     # Heart footer (V11 template)
     printf '\n'
-    __corp_banner_color "\${BANNER_COLOR_PRIMARY}"
-    printf '  Made with '
+    __corp_banner_dim
+    printf '  Proudly made from France with '
     __corp_banner_reset
     __corp_banner_color "red"
-    printf '♥'
+    printf '❤'
     __corp_banner_reset
-    __corp_banner_color "\${BANNER_COLOR_PRIMARY}"
-    printf ' by %s\n' "\${CORP_POWERED_BY}"
-    __corp_banner_reset
-    printf '\n'
+    printf '\n\n'
 }
 
 # Allow callers to discover the resolved style (handy for tests / debugging)

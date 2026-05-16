@@ -1,7 +1,6 @@
 """Pytest suite for ``scripts/url-purge.py``.
 
-Verifies the post-render vendor-URL scanner used by Patrick Code corporate
-launcher (powered by TGV Europe). Covers:
+Verifies the post-render vendor-URL scanner used by the launcher. Covers:
 
 * Clean tree -> 0 violations
 * Direct vendor URL in a shell script -> VIOLATION
@@ -138,7 +137,7 @@ def test_openai_in_shell_comment_is_ok(tmp_path: Path) -> None:
     _write(
         tmp_path / "launcher.sh",
         "#!/usr/bin/env bash\n"
-        "# Never call api.openai.com directly - use Socle IA proxy.\n"
+        "# Never call api.openai.com directly - use the corporate gateway proxy.\n"
         "echo ok\n",
     )
 
@@ -204,7 +203,7 @@ def test_pattern_matches_versioned_paths() -> None:
         assert pattern.search(s) is not None, f"pattern missed: {s}"
 
     # Negative: a benign URL must not match.
-    assert pattern.search("https://socle.ia.sncf.fr/v1/chat") is None
+    assert pattern.search("https://gateway.acme.example/v1/chat") is None
 
 
 # ---------------------------------------------------------------------------

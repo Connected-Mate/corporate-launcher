@@ -117,4 +117,4 @@ For any doubt: ${CYBER_AUTHORITY}. When in doubt, asking is cheaper than a post-
 
 ---
 
-*${CORP_NAME} is part of the Corporate Launcher project. Made for friends · Made from France with ❤️*
+*${CORP_NAME} is part of the Corporate Launcher project. Proudly made from France with ❤️*

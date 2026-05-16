@@ -1,9 +1,12 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 *.egg-info/
 .venv/
+.pytest_cache/
+.coverage
 
 # Node
 node_modules/
@@ -22,6 +25,17 @@ Thumbs.db
 build/
 dist/
 .cache/
+*.skill
+
+# Logs
+*.log
+
+# Audit / probe artifacts
+.api-probe-report.json
+audit-report.md
+audit-report.json
+compliance.docx
+banner.txt
 
 # Test fixtures
 *.local.json

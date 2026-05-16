@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # footer.sh - sourced bash module
-# Prints the "Made for friends" heart footer at the end of show_banner().
+# Prints the "Proudly made from France" heart footer at the end of show_banner().
 #
 # Expects the following ANSI variables to be defined by the caller (banner.sh):
 #   DIM   - dim/faint style
@@ -14,6 +14,6 @@
 : "${RESET:=}"
 
 show_heart_footer() {
-  printf '  %sMade for friends · Made from France with %s❤%s\n' \
+  printf '  %sProudly made from France with %s❤%s\n' \
     "${DIM}" "${RED}" "${RESET}"
 }

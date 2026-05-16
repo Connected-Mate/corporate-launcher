@@ -4,7 +4,7 @@ Post-render scanner that guarantees no vendor public endpoint (api.anthropic.com
 
 ## 1. Why this exists — defense in depth
 
-A corporate launcher routes every LLM call through `socle.ia.sncf.fr`. Direct vendor URLs in launcher files are a problem because:
+A corporate launcher routes every LLM call through `gateway.acme.example`. Direct vendor URLs in launcher files are a problem because:
 
 - A user editing `settings.json` later could copy-paste `api.anthropic.com` from a template and bypass the proxy.
 - A CI/CD pipeline could scrape generated artifacts and surface forbidden domains.
@@ -20,7 +20,7 @@ The authoritative list lives in `templates/shared/url-purge-list.json`. As of v6
 - ~30 regex patterns for subdomain wildcards (e.g. `.*\.anthropic\.com/.*`, `.*\.ingest\.sentry\.io/.*`) and for embedded secrets in URLs (`sk-[A-Za-z0-9]{20,}`, `sk-ant-...`).
 - Representative vendors: Anthropic, OpenAI, Google Gemini, Mistral, Cohere, Groq, Perplexity, DeepSeek, xAI, Together, Fireworks, Replicate, Hugging Face, OpenRouter, Cursor, Cline, Continue.dev, Codeium/Windsurf, Tabnine, GitHub Copilot, Aider, LangSmith, Langfuse, Helicone, Portkey, Braintrust, W&B, Sentry, Statsig, GrowthBook, Segment, Amplitude, Mixpanel, PostHog, Heap, FullStory, Hotjar, LogRocket, Datadog, New Relic, Honeycomb, Bugsnag, Rollbar, Raygun, Intercom, LaunchDarkly, Split.io, Optimizely, VSCode marketplace, Open VSX, npm, PyPI.
 
-Also recorded: `allowed_corp_endpoints` — `socle.ia.sncf.fr`, `nexus.sncf.fr`, `github.com`, `api.github.com`, `raw.githubusercontent.com`. These never trigger a violation.
+Also recorded: `allowed_corp_endpoints` — `gateway.acme.example`, `nexus.acme.example`, `github.com`, `api.github.com`, `raw.githubusercontent.com`. These never trigger a violation.
 
 ## 3. Allowed contexts (verdict: OK)
 

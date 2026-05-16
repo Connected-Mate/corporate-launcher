@@ -6,38 +6,38 @@ interview. It takes the answers collected from the interview (a JSON
 config file) and produces the full launcher tree on disk, plus any
 distribution artefacts the creator asked for.
 
-Pipeline:
-    1. Load and validate the config file (``${VAR}`` schema, see
-       ``references/interview-flow.md`` for the validation rules).
+Pipeline (phase numbers match SKILL.md — source of truth):
+    1.  Load and validate the config file (``${VAR}`` schema, see
+        ``references/interview-flow.md`` for the validation rules).
     1.5 If ``API_PROBE_ENABLED=yes`` call ``scripts/api-probe.py``
         against the configured gateway; save report to
         ``INSTALL_DIR/.api-probe-report.json``. Failures prompt
         the operator unless ``--ignore-probe`` / ``--non-interactive``.
-    2. For each CLI in ``WRAPPED_CLIS`` render
-       ``templates/<cli>/`` and ``templates/shared/`` into
-       ``INSTALL_DIR`` (and ``INSTALL_DIR/scripts/`` for shared bits).
-    2.5 If ``BANNER_GENERATE=yes`` invoke ``scripts/pixel-art-logo.py``
-        and write ``INSTALL_DIR/banner.txt`` (consumed by show_banner).
-    3. If ``SKILLS_MODE != none`` invoke ``scripts/skills-installer.py``
-       with a derived skills config.
-    4. If ``MCP_SERVERS`` is non-empty invoke ``scripts/mcp-installer.py``
-       once per wrapped CLI.
-    4.5 Run ``scripts/audit-launcher.py`` and save
+    1.6 Optional smoke load-test (``LOAD_TEST_ENABLED=yes``) via
+        ``scripts/load-test.py``.
+    2.  For each CLI in ``WRAPPED_CLIS`` render ``templates/<cli>/``
+        into ``INSTALL_DIR``.
+    2.5 If ``DEV_RULES_MODE != none`` invoke
+        ``scripts/dev-rules-installer.py`` to inject corporate dev
+        rules into the launcher tree (NEW).
+    3.  Render ``templates/shared/`` into ``INSTALL_DIR/scripts/``
+        (skills + MCP installers + ancillary helpers).
+    3.5 Run ``scripts/audit-launcher.py`` and save
         ``INSTALL_DIR/audit-report.{md,json}``. P0 findings warn
         (or abort under ``--strict``).
-    4.6 Run ``scripts/url-purge.py``. Auto-patches when
+    3.6 Run ``scripts/url-purge.py``. Auto-patches when
         ``URL_PURGE_AUTOPATCH=yes``; aborts under ``--strict``.
-    5. If ``DIST_MODE != none`` render ``templates/dist/<mode>/``
-       into ``dist/``.
-    5.5 If ``COMPLIANCE_DOCX=yes`` call
+    3.7 If ``BANNER_GENERATE=yes`` invoke ``scripts/pixel-art-logo.py``
+        and write ``INSTALL_DIR/banner.txt`` (consumed by show_banner).
+    4.  If ``DIST_MODE != none`` render ``templates/dist/<mode>/``
+        into ``dist/`` and run the matching scaffold/build/oneliner
+        post-render action.
+    4.5 If ``COMPLIANCE_DOCX=yes`` call
         ``scripts/build-compliance-docx.py`` → ``compliance.docx``.
         Soft-fails when python-docx is missing.
-    6. For ``public-git`` / ``private-git`` run the rendered
-       ``scaffold.sh`` (if any) to push the repo.
-    7. For ``tarball`` run the rendered ``build.sh``.
-    8. For ``oneliner`` write ``install.sh`` + ``install.sh.sha256``.
-    9. Print a final summary (launcher path, launch command,
-       distribution artefact URL or path).
+    5.  Print the post-install summary (launcher path, launch command,
+        distribution artefact URL or path, and the "Proudly made from
+        France" footer).
 
 Usage:
     python3 generate.py --config config.json
@@ -91,6 +91,22 @@ def _script_exists(name: str) -> Path | None:
         return path
     print(f"  skip: companion script not found — {path}")
     return None
+
+
+def _skill_dir() -> Path:
+    """Return the root of the corporate-launcher skill (parent of scripts/).
+
+    Honour ``CLAUDE_SKILL_DIR`` if it points at a real directory; otherwise
+    fall back to the repository root inferred from this file's location.
+    Subprocesses spawned by generate.py inherit ``CLAUDE_SKILL_DIR`` from
+    the env propagation step at the start of ``main()``.
+    """
+    env_root = os.environ.get("CLAUDE_SKILL_DIR")
+    if env_root:
+        candidate = Path(env_root).expanduser()
+        if candidate.is_dir():
+            return candidate.resolve()
+    return REPO_ROOT
 INTERNAL_HOST_RE = re.compile(
     r"(\.internal\b|\.local\b|\.intra\b|^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[0-1])\.)",
     re.IGNORECASE,
@@ -181,6 +197,20 @@ def validate_config(ctx: Mapping[str, object]) -> list[str]:
     if dist_mode and dist_mode not in SUPPORTED_DIST:
         errs.append(f"unsupported DIST_MODE: {dist_mode!r}")
 
+    # Rule 9 — DEV_RULES_MODE: each non-trivial source needs its own pointer.
+    dev_rules_mode = str(ctx.get("DEV_RULES_MODE", "none") or "none").lower()
+    if dev_rules_mode not in ("none", "inline", "local", "git"):
+        errs.append(
+            f"unsupported DEV_RULES_MODE: {ctx.get('DEV_RULES_MODE')!r} "
+            "(expected one of: none, inline, local, git)"
+        )
+    if dev_rules_mode == "inline" and not ctx.get("DEV_RULES_CONTENT"):
+        errs.append("DEV_RULES_MODE=inline requires DEV_RULES_CONTENT")
+    if dev_rules_mode == "local" and not ctx.get("DEV_RULES_LOCAL_PATH"):
+        errs.append("DEV_RULES_MODE=local requires DEV_RULES_LOCAL_PATH")
+    if dev_rules_mode == "git" and not ctx.get("DEV_RULES_GIT_URL"):
+        errs.append("DEV_RULES_MODE=git requires DEV_RULES_GIT_URL")
+
     return errs
 
 
@@ -269,6 +299,64 @@ def render_clis(
                 print(f"[dry-run] would render {f} → {shared_dst / rel}")
     else:
         written.extend(render_tree(shared_src, shared_dst, ctx))
+    return written
+
+
+def run_dev_rules(
+    ctx: Mapping[str, object],
+    install_dir: Path,
+    config_path: Path,
+    *,
+    dry_run: bool,
+) -> int:
+    """Phase 2.5 — inject corporate dev rules into the launcher tree.
+
+    Delegates the heavy lifting to ``scripts/dev-rules-installer.py``. The
+    installer reads ``DEV_RULES_MODE`` (``local`` | ``git`` | ``none``) plus
+    the matching pointer (``DEV_RULES_LOCAL_PATH`` / ``DEV_RULES_GIT_URL``)
+    out of the config and writes one or more rule sections into the rendered
+    launcher.
+
+    Returns the number of rules sections written (0 when disabled / missing).
+    """
+    mode = str(ctx.get("DEV_RULES_MODE", "none") or "none").lower()
+    if mode == "none":
+        return 0
+
+    installer = _skill_dir() / "scripts" / "dev-rules-installer.py"
+    if not installer.is_file():
+        print(f"  warning: dev-rules-installer.py not found at {installer} — skipping")
+        return 0
+
+    cmd = [
+        "python3",
+        str(installer),
+        "--config",
+        str(config_path),
+        "--launcher-dir",
+        str(install_dir),
+    ]
+    if dry_run:
+        print(f"[dry-run] would run dev-rules-installer ({mode}) → {install_dir}")
+        return 0
+
+    print(f"  $ python3 {installer.name} --config {config_path} --launcher-dir {install_dir}")
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
+
+    # The installer prints a JSON-line summary on its last stdout line
+    # (``{"sections": N, ...}``) when it succeeds. Parse defensively.
+    written = 0
+    last_line = (proc.stdout or "").strip().splitlines()[-1:] or [""]
+    try:
+        summary = json.loads(last_line[0]) if last_line[0].startswith("{") else {}
+        written = int(summary.get("sections", 0))
+    except (json.JSONDecodeError, ValueError):
+        written = 0
+
+    if proc.returncode != 0:
+        msg = (proc.stderr or proc.stdout or "").strip()[:200]
+        print(f"  warning: dev-rules-installer exited {proc.returncode}: {msg}")
+    print(f"[2.5] Dev rules: {mode} — {written} rules sections written")
     return written
 
 
@@ -830,7 +918,7 @@ def print_summary(
     print(bar)
     if dry_run:
         print("  Dry run — no files were written.")
-    print()
+    print("\n  Proudly made from France with ❤️\n")
 
 
 # ----------------------------------------------------------------------- #
@@ -883,6 +971,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = p.parse_args(argv)
 
+    # Propagate the skill root to every subprocess we spawn so companion
+    # scripts (api-probe, dev-rules-installer, audit-launcher, ...) can
+    # resolve their own siblings via ``${CLAUDE_SKILL_DIR}/scripts/...``.
+    os.environ["CLAUDE_SKILL_DIR"] = str(_skill_dir())
+
     if not args.config.is_file():
         print(f"ERROR: config not found: {args.config}", file=sys.stderr)
         return 2
@@ -920,7 +1013,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  dry_run     = {args.dry_run}")
 
     try:
-        print("\n[1/9] Probing corporate AI gateway ...")
+        config_path = args.config.resolve()
+
+        print("\n[1.5] Probing corporate AI gateway ...")
         run_api_probe(
             ctx, install_dir,
             dry_run=args.dry_run,
@@ -928,48 +1023,50 @@ def main(argv: list[str] | None = None) -> int:
             non_interactive=args.non_interactive,
         )
 
-        print("\n[2/9] Rendering CLI templates ...")
+        # Phase 1.6 — optional smoke load test (off by default).
+        print("\n[1.6] Smoke load-test (if enabled) ...")
+        run_load_test_smoke(ctx, install_dir, dry_run=args.dry_run)
+
+        print("\n[2] Rendering launcher tree ...")
         render_clis(ctx, install_dir, dry_run=args.dry_run)
 
-        print("\n[3/9] Generating pixel-art banner ...")
-        run_pixel_art_banner(ctx, install_dir, dry_run=args.dry_run)
+        print("\n[2.5] Injecting corporate dev rules ...")
+        run_dev_rules(ctx, install_dir, config_path, dry_run=args.dry_run)
 
-        print("\n[4/9] Installing skills bundle ...")
+        print("\n[3] Rendering shared modules (skills + MCP) ...")
         run_skills_installer(ctx, install_dir, dry_run=args.dry_run)
-
-        print("\n[5/9] Configuring MCP servers ...")
         run_mcp_installer(ctx, install_dir, dry_run=args.dry_run)
 
-        print("\n[6/9] Self-auditing rendered launcher ...")
+        print("\n[3.5] Self-auditing rendered launcher ...")
         if _is_truthy(ctx.get("SELF_AUDIT_ENABLED", "yes")):
             audit_md, _audit_json = run_self_audit(
-                ctx, install_dir, args.config.resolve(),
+                ctx, install_dir, config_path,
                 dry_run=args.dry_run, strict=args.strict,
             )
         else:
             print("  skip: SELF_AUDIT_ENABLED=no")
             audit_md, _audit_json = None, None
 
-        print("\n[7/9] Scanning for vendor URL leaks ...")
+        print("\n[3.6] Scanning for vendor URL leaks ...")
         run_url_purge(
-            ctx, install_dir, args.config.resolve(),
+            ctx, install_dir, config_path,
             dry_run=args.dry_run, strict=args.strict,
         )
 
-        print("\n[8/9] Building compliance .docx (if requested) ...")
+        print("\n[3.7] Generating pixel-art banner ...")
+        run_pixel_art_banner(ctx, install_dir, dry_run=args.dry_run)
+
+        print("\n[4] Rendering distribution artefacts ...")
+        produced_dist = render_distribution(ctx, install_dir, dist_dir, dry_run=args.dry_run)
+
+        print("\n[4.5] Building compliance .docx (if requested) ...")
         run_compliance_docx(
-            ctx, install_dir, args.config.resolve(), audit_md,
+            ctx, install_dir, config_path, audit_md,
             dry_run=args.dry_run,
         )
 
-        # Optional smoke load test (off by default).
-        run_load_test_smoke(ctx, install_dir, dry_run=args.dry_run)
-
         # External review reminders (cyber / DPO) — pure stdout side effect.
         emit_review_gates(ctx)
-
-        print("\n[9/9] Rendering distribution artefacts ...")
-        produced_dist = render_distribution(ctx, install_dir, dist_dir, dry_run=args.dry_run)
 
     except UnresolvedVariable as e:
         print(f"ERROR: template references an undefined variable: {e}", file=sys.stderr)
@@ -981,6 +1078,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: missing file or directory: {e}", file=sys.stderr)
         return 5
 
+    print("\n[5] Post-install summary ...")
     print_summary(ctx, install_dir, produced_dist, dry_run=args.dry_run)
     return 0
 

@@ -3,8 +3,8 @@
 
 Verifies no mention of api.anthropic.com / api.openai.com / etc. leaks into
 the generated launcher EXCEPT inside `permissions.deny` arrays or `# tpl:`
-template comments. Used as a post-render step by Patrick Code corporate
-launcher (powered by TGV Europe).
+template comments. Used as a post-render step by the corporate
+launcher generator.
 
 Usage:
     python3 scripts/url-purge.py \\

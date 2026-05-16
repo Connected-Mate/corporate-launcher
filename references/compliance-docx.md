@@ -120,7 +120,7 @@ Single language for now (**English**). The structure is deliberately translation
 - No string is built by token-concatenation inside a loop; sentences are one f-string each, so a translator replaces one line at a time.
 - The 15 cyber-control descriptions in `CYBER_CONTROLS` are the largest translation surface (~30 lines).
 
-A French translation (target audience: RSSI SNCF / ANSSI correspondents) is the planned next variant. When it lands it will be a second template file (`sections.fr.md.tpl`) selected via a `--lang` flag.
+A French translation (target audience: RSSI ACME / ANSSI correspondents) is the planned next variant. When it lands it will be a second template file (`sections.fr.md.tpl`) selected via a `--lang` flag.
 
 ---
 

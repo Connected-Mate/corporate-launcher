@@ -366,7 +366,7 @@ refresh_token() {
         -H "Authorization: Bearer ${current}" \
         -H "X-Request-ID: $(uuidgen)" \
         --max-time 10) || {
-            echo "Token refresh failed — re-authenticate via 'patrick login'." >&2
+            echo "Token refresh failed — re-authenticate via '${CORP_SLUG} login'." >&2
             return 1
         }
     security add-generic-password -s "${CORP_SLUG}" -a "$USER" -w "$new_token" -U
@@ -384,7 +384,7 @@ When a token is suspected leaked (committed to git, pasted in chat, found in a l
 1. **Revoke immediately** — `curl -X DELETE ${GATEWAY_ADMIN_URL}/tokens/${TOKEN_ID}` (idempotent, safe to repeat).
 2. **Rotate the user** — force a re-auth on next launcher invocation by deleting the keychain entry.
 3. **Pull the audit trail** (Section 12) for that token_id and grep for unusual model/cost spikes.
-4. **Notify** Direction Cybersecurite SNCF via the standard SOC ticket — include `token_id`, leak vector, observed scope.
+4. **Notify** the corporate security office via the standard SOC ticket — include `token_id`, leak vector, observed scope.
 5. **Scrub** the leak source: `git filter-repo`, retro-edit the chat message, purge log file.
 6. **Post-mortem** within 5 business days; if the leak was an AI-assisted commit, add the pattern to the cyber-guard regex (Section 6).
 
@@ -408,9 +408,9 @@ One JSON object per line, one line per LLM round-trip:
   "user": "0104389S",
   "host": "MBP-0104389S.local",
   "launcher_version": "1.4.2",
-  "cli": "patrick-code",
+  "cli": "corporate-launcher",
   "model": "claude-opus-4-7",
-  "route": "socle.ia.sncf.fr/v1/messages",
+  "route": "gateway.acme.example/v1/messages",
   "input_tokens": 4218,
   "output_tokens": 612,
   "cache_read_tokens": 31402,
@@ -442,7 +442,7 @@ audit_log() {
 ### How the SIEM ingests
 
 1. **Filebeat / Vector agent** on each workstation tails `/tmp/${CORP_SLUG}-audit-*.jsonl`, ships over TLS to the corporate SIEM (Splunk / Elastic / Sentinel).
-2. **Index policy**: hot for 30 days, warm for 1 year, cold (object storage, WORM) for 7 years per SNCF retention policy.
+2. **Index policy**: hot for 30 days, warm for 1 year, cold (object storage, WORM) for 7 years per ACME retention policy.
 3. **Parser**: declare each field as a typed column; `cost_eur` as float, `*_tokens` as long, `ts` as datetime UTC.
 4. **Dashboards**: per-user daily cost, per-model usage mix, p95 latency by route, anomaly detection on `cost_eur` z-score per `token_id`.
 5. **Alerts**: `cost_eur > 5` in a single request, `status != "ok"` rate > 5%/5min, any request from a `token_id` listed in the revocation feed (cross-ref Section 11).

@@ -42,3 +42,7 @@ ${CORP_LICENSE_NOTE}.
 ---
 
 The cyber rules in `cyber-rules.md` are appended to this prompt and have the same authority.
+
+---
+
+*${CORP_NAME} — Proudly made from France with ❤️*

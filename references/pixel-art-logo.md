@@ -20,7 +20,7 @@ step is opt-in via `BANNER_STYLE` but on by default — silence is boring.
 | `slant`   | Italic figlet variant — needs `pyfiglet`, falls back to block.  |
 | `mini`    | 2-row box-drawing glyphs — compact for narrow terminals.        |
 | `pixel`   | Shaded gradient blocks (`░▒▓█`) — retro 8-bit feel.             |
-| `vintage` | Block art framed with rails + `o─o` train wheels — SNCF flavor. |
+| `vintage` | Block art framed with rails + `o─o` train wheels — retro flavor. |
 | `tech`    | Diagonal `▞▚` fills — sharp, angular, minimalist.               |
 
 ## 3. Visual examples (`ACME COPILOT`)
@@ -70,7 +70,7 @@ on the shell side before invoking Python — keeps narrow tmux panes legible.
 ## 5. Color
 
 ANSI 256-color codes via `--color N` (0-255). The banner emits
-`\033[38;5;Nm…\033[0m` per line. Recommended brand colors: `208` (SNCF
+`\033[38;5;Nm…\033[0m` per line. Recommended brand colors: `208` (warm
 orange), `33` (corporate blue), `196` (alert red). Color is stripped when
 writing to a file (`--out`) so cached banners stay paste-safe.
 
@@ -79,7 +79,7 @@ writing to a file (`--out`) so cached banners stay paste-safe.
 **Manual / preview:**
 ```bash
 python3 scripts/pixel-art-logo.py --text "ACME COPILOT" --style block --color 208
-python3 scripts/pixel-art-logo.py --text "TGV" --style vintage --color 208 --out banner.txt
+python3 scripts/pixel-art-logo.py --text "ACME" --style vintage --color 208 --out banner.txt
 ```
 
 **Inside the launcher** — `show_corp_banner()` in
@@ -132,4 +132,4 @@ art and identity block:
 The `♥` glyph is rendered in red even when the rest of the banner uses
 `BANNER_COLOR_PRIMARY` — a small, deliberate moment of warmth.
 `templates/banner/footer.sh.tpl` provides an alternate variant
-(`Made for friends · Made from France with ❤`) for community editions.
+(`Made for friends · Made with ❤`) for community editions.

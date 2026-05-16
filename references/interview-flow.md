@@ -13,6 +13,7 @@ Save the answers under uppercase snake_case keys (`CORP_NAME`, `LLM_PRIMARY_URL`
 - [Section 3 — Backend (per CLI)](#section-3--backend-per-cli)
 - [Section 4 — Network](#section-4--network)
 - [Section 5 — Cyber](#section-5--cyber)
+- [Section 5.5 — Corporate dev rules](#section-55--corporate-dev-rules)
 - [Section 6 — Branding](#section-6--branding)
 - [Section 7 — Install layout (creator's machine)](#section-7--install-layout-creators-machine)
 - [Section 8 — Skills bundle (what colleagues get inside the launcher)](#section-8--skills-bundle-what-colleagues-get-inside-the-launcher)
@@ -181,7 +182,6 @@ This section captures the security context the launcher must reference: the cybe
 | `CYBER_AUTHORITY` | Who's your corporate cyber authority? (e.g. `ACME Group CISO`, `Globex Security Office`) | string | required |
 | `CORP_RULES_FILE` | What path to the corporate cyber rules markdown should the wrapped CLI load? | path | `cyber-rules.md` |
 | `CORP_SECRET_MANAGER` | Which approved secret manager do you use? (e.g. `Vault`, `1Password Business`) | string | empty |
-| `RSSI_CLEARANCE_REF` | What's the security clearance or ARC ticket reference for this launcher? | string | empty |
 | `SSO_PROVIDER` | Which SSO provider does your organisation use? (e.g. `Okta`, `Azure AD`, `Ping`) | string | empty |
 | `TOKEN_PORTAL_URL` | Where do users mint personal tokens for the gateway? (URL) | url | empty |
 | `TOKEN_TTL_DAYS` | How many days is a personal token valid for? (shown in onboarding) | number | `30` |
@@ -195,6 +195,27 @@ This section captures the security context the launcher must reference: the cybe
 | `LOAD_TEST_ENABLED` | Run a small load test against the gateway after install? | yes/no | no |
 | `LOAD_TEST_TOTAL` | Number of test requests if load test enabled | number | 50 |
 | `LOAD_TEST_CONCURRENCY` | Concurrent requests if load test enabled | number | 5 |
+
+---
+
+## Section 5.5 — Corporate dev rules
+
+What it does: lets the AI assistant pick up your company's coding conventions, naming rules, framework preferences, banned patterns. Injected into the launcher's system prompt alongside cyber-rules.md. See `references/dev-rules.md` for full details.
+
+Ask:
+
+| Var | Question | Type | Default |
+|---|---|---|---|
+| `DEV_RULES_MODE` | How should we source your corporate dev rules? `none` / `inline` (paste markdown) / `local` (file path) / `git` (private repo) | enum | `none` |
+| `DEV_RULES_CONTENT` | (if inline) Paste your dev rules markdown here | textarea | empty |
+| `DEV_RULES_LOCAL_PATH` | (if local) Path to your dev-rules.md file | path | empty |
+| `DEV_RULES_GIT_URL` | (if git) Repo URL containing the rules | url | empty |
+| `DEV_RULES_GIT_REF` | (if git) Branch / tag / commit | string | `main` |
+| `DEV_RULES_GIT_PATH` | (if git) Path inside the repo | path | `dev-rules.md` |
+| `DEV_RULES_BACKEND_STACK` | (optional) One-line description of the preferred backend stack | string | empty |
+| `DEV_RULES_FRONTEND_STACK` | (optional) One-line description of the preferred frontend stack | string | empty |
+| `DEV_RULES_ARCH_CHANNEL` | (optional) Slack / Teams channel for architecture decisions | string | empty |
+| `DEV_RULES_DOC_HUB` | (optional) URL of your internal docs hub | url | empty |
 
 ---
 

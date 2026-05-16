@@ -92,3 +92,7 @@ If the user pastes something that looks like a real secret (API key, private key
 
 For any doubt or escalation: **${CYBER_AUTHORITY}**.
 Support: ${CORP_SUPPORT_CONTACT}.
+
+---
+
+*${CORP_NAME} — Proudly made from France with ❤️*

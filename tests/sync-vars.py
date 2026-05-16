@@ -86,6 +86,10 @@ DOC_ALIASES: frozenset[str] = frozenset(
         "RED", "DIM", "RESET",
         # Counts derived at generation time from list-valued answers.
         "MCP_SERVERS_COUNT", "SKILLS_COUNT",
+        # Dev-rules config keys consumed by scripts/dev-rules-installer.py at
+        # generation time (not by template rendering). Documented in §10 of
+        # interview-flow.md and read directly from the config JSON.
+        "DEV_RULES_CONTENT", "DEV_RULES_GIT_PATH", "DEV_RULES_GIT_REF",
     }
 )
 

@@ -66,7 +66,7 @@ The skill scaffolds a clean repo under `dist/repo/` with:
 - the launcher tree
 - `.gitignore`
 - `LICENSE`
-- a generated `README.md` adapted from `templates/dist-readme/public.md.tpl`
+- a generated `README.md` adapted from `templates/dist/dist-readme/public.md.tpl`
 - a `CHANGELOG.md` initialized at v0.1.0
 
 Then it runs:
