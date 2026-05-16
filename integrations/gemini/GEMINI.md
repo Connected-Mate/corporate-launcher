@@ -22,7 +22,7 @@ Either:
 Follow the canonical workflow defined at the repo root (`SKILL.md`):
 
 1. **Phase 0** — confirm intent (which CLI + which backend)
-2. **Phase 1** — run the config interview (`reference/interview-flow.md`)
+2. **Phase 1** — run the config interview (`references/interview-flow.md`)
 3. **Phase 2** — validate, recap, confirm
 4. **Phase 3** — render templates (`scripts/render.py`)
 5. **Phase 4** — generate the distribution kit
@@ -32,7 +32,7 @@ Read the full instructions, anti-patterns, and quality bar from the repo root `S
 
 ## Reference
 
-- Gemini extensions spec: https://geminicli.com/docs/extensions/reference/
+- Gemini extensions spec: https://geminicli.com/docs/extensions/references/
 - Loader path: `~/.gemini/extensions/<name>/`
 - Manifest: `gemini-extension.json`
 - Repo: https://github.com/Connected-Mate/corporate-launcher

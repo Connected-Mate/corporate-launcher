@@ -41,9 +41,9 @@ else
     C_BRAND=""; C_GREEN=""; C_RED=""; C_YELLOW=""; C_DIM=""; C_RESET=""
 fi
 
-info() { printf "  ${C_GREEN}[OK]${C_RESET} %s\n" "$1"; }
-warn() { printf "  ${C_YELLOW}[!!]${C_RESET} %s\n" "$1" >&2; }
-fail() { printf "  ${C_RED}[KO]${C_RESET} %s\n" "$1" >&2; }
+info() { printf "  $\{C_GREEN\}[OK]$\{C_RESET\} %s\n" "$1"; }
+warn() { printf "  $\{C_YELLOW\}[!!]$\{C_RESET\} %s\n" "$1" >&2; }
+fail() { printf "  $\{C_RED\}[KO]$\{C_RESET\} %s\n" "$1" >&2; }
 
 # tpl: ---------------------------------------------------------------------
 # tpl: Shared module exports needed by sourced scripts
@@ -81,7 +81,7 @@ done
 # tpl: ---------------------------------------------------------------------
 show_banner() {
     [ -t 1 ] || return 0
-    printf "${C_BRAND}%s${C_RESET} ${C_DIM}v%s — powered by %s${C_RESET}\n" \
+    printf "$\{C_BRAND\}%s$\{C_RESET\} $\{C_DIM\}v%s — powered by %s$\{C_RESET\}\n" \
         "${CORP_NAME}" "$LAUNCHER_VERSION" "${CORP_POWERED_BY}"
 }
 
@@ -233,12 +233,12 @@ main() {
             exit 0 ;;
         --dry-run)
             print_status
-            printf "\n  ${C_DIM}DRY RUN — not exec'ing codex${C_RESET}\n"
+            printf "\n  $\{C_DIM\}DRY RUN — not exec'ing codex$\{C_RESET\}\n"
             exit 0 ;;
     esac
     if [ "$\{CORP_DRY_RUN:-0\}" = "1" ]; then
         print_status
-        printf "\n  ${C_DIM}CORP_DRY_RUN=1 — not exec'ing codex${C_RESET}\n"
+        printf "\n  $\{C_DIM\}CORP_DRY_RUN=1 — not exec'ing codex$\{C_RESET\}\n"
         exit 0
     fi
 

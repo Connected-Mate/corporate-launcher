@@ -9,8 +9,8 @@ It must, given a validated JSON config:
   2. Run optional sub-installers (skills, mcp) via subprocess.
   3. Produce the chosen distribution artefacts under ``<out>/dist/``.
 
-These tests pin the behaviour described in ``reference/interview-flow.md``
-section *Validation rules* and ``reference/distribution-modes.md``.
+These tests pin the behaviour described in ``references/interview-flow.md``
+section *Validation rules* and ``references/distribution-modes.md``.
 
 All subprocess calls are monkeypatched — no network, no real ``gh``/``git``.
 """
@@ -68,6 +68,15 @@ def _minimal_config(**overrides: Any) -> dict[str, Any]:
         "CORP_ORGANIZATION": "Acme Group",
         "CORP_TAGLINE": "Internal AI assistant",
         "CORP_LICENSE_NOTE": "Internal use only",
+        "CORP_LAUNCHER_VERSION": "1.0.0",
+        "VERSION": "1.0.0",
+        "UNDERLYING_CLI": "claude",
+        "UNDERLYING_CLI_URL": "https://registry.npmjs.org/@anthropic-ai/claude-code",
+        "CORP_INTERNAL_CONTACT": "ai-platform@acme.example",
+        "CORP_SECURITY_EMAIL": "psirt@acme.example",
+        "CORP_COPYRIGHT_YEAR": "2026",
+        "DIST_DEFAULT_BRANCH": "main",
+        "VPN_REQUIRED_NOTE": "VPN required",
         "WRAPPED_CLIS": ["claude-code"],
         "CC_BACKEND": "Anthropic",
         "CC_PRIMARY_URL": "https://api.acme.example",
@@ -76,10 +85,17 @@ def _minimal_config(**overrides: Any) -> dict[str, Any]:
         "CC_HAIKU_MODEL": "claude-haiku-4-5",
         "CC_AUTH_MODEL": "Bearer",
         "CC_NEEDS_STRIP_PROXY": "no",
+        "GATEWAY_BACKEND": "anthropic",
+        "GATEWAY_ADMIN_API": "",
+        "GATEWAY_ADMIN_TOKEN_ENV": "",
+        "PROVIDER_KIND": "anthropic",
+        "LLM_TOKEN_URL": "",
+        "CORP_CA_ORG": "Acme Group",
+        "CA_FILTER_EXTRA": "",
         "VPN_REQUIRED": "yes",
         "VPN_PROBE_URL": "https://api.acme.example",
         "PROXY_HOST": "",
-        "PROXY_PORT": 8080,
+        "PROXY_PORT": "",
         "PROXY_REQUIRE_AUTH": "no",
         "NO_PROXY_LIST": "127.0.0.1,localhost",
         "CA_BUNDLE_PATH": "",

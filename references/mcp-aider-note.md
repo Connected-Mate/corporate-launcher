@@ -37,7 +37,7 @@ In `templates/aider/install.sh.tpl`, after resolving `SKILLS_MODE`, emit:
 if echo "${SKILLS_MODE}" | grep -qi mcp; then
     warn "Aider has no native MCP support (May 2026)."
     warn "MCP-flagged skills will be installed as docs only."
-    warn "See reference/mcp-aider-note.md for bridge options."
+    warn "See references/mcp-aider-note.md for bridge options."
 fi
 ```
 

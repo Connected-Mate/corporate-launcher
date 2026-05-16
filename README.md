@@ -72,7 +72,7 @@ Nothing is irreversible. The uninstaller restores every file and the shell RC fr
 
 ## Install
 
-The skill works from **4 AI coding hosts** — Claude Code, Codex CLI, Gemini CLI, and Cursor/Cline. Pick yours:
+The skill works from **5 AI coding hosts** — Claude Code, Codex CLI, Gemini CLI, Cursor, and Cline. Pick yours:
 
 | Host | One-liner |
 |---|---|
@@ -81,6 +81,8 @@ The skill works from **4 AI coding hosts** — Claude Code, Codex CLI, Gemini CL
 | Gemini CLI | `gemini extensions install https://github.com/Connected-Mate/corporate-launcher --path integrations/gemini` |
 | Cursor | `cp -R integrations/cursor/.cursor ./` (from a cloned repo) |
 | Cline (VS Code) | `cp -R integrations/cline/.clinerules ./` (from a cloned repo) |
+
+Or auto-detect every installed host in one go: `bash scripts/host-deploy.sh` (use `--all` for non-interactive, `--dry-run` to preview).
 
 Full host-by-host instructions, the universal symlink one-liner, and verification commands live in **[INSTALL.md](INSTALL.md)**.
 
@@ -110,6 +112,8 @@ Or ask in natural language — the skill description triggers on phrases like *"
 │       │                                                                │
 │       ▼                                                                │
 │  render.py walks templates/, substitutes ${VAR}                        │
+│  references/ (CLI matrix, env vars, security patterns, distribution)   │
+│  feed the interview with provider- and host-specific guidance.         │
 │       │                                                                │
 │       ▼                                                                │
 │  ~/.local/share/<your-slug>/                                           │
@@ -118,6 +122,7 @@ Or ask in natural language — the skill description triggers on phrases like *"
 │  ├── BRANDING.md + cyber-rules.md                                      │
 │  ├── settings.json (CLI-native)                                        │
 │  ├── skills/                  ← bundled for your colleagues            │
+│  ├── references/              ← shipped CLI / env / security docs      │
 │  └── scripts/                 ← VPN/proxy/secrets/cost/filter          │
 │       │                                                                │
 │       ▼                                                                │
@@ -151,7 +156,12 @@ Picking option 4 lets you maintain a private skill catalog inside your company. 
 
 You can also pre-configure MCP servers the same way: the launcher's `settings.json` ships with your team's MCP server list, so day-one developers get the right context (Jira, GitHub Enterprise, your internal docs).
 
-See [`reference/skills-bundle.md`](reference/skills-bundle.md) for the full options.
+Two helpers make the skills bundle self-service:
+
+- [`scripts/host-deploy.sh`](scripts/host-deploy.sh) — auto-detect every installed AI coding host (Claude Code, Codex CLI, Gemini CLI, Cursor, Cline) and deploy the launcher's bundled skills into each one with `--all` / `--dry-run` / `--host NAME` flags.
+- [`scripts/check-skill-quality.py`](scripts/check-skill-quality.py) — programmatic audit of any `SKILL.md` against the [Audit Rulebook](tests/AUDIT_RULEBOOK.md) (frontmatter, description budget, body size, anti-pattern rationale, forbidden brand terms, sync drift). Run it before shipping a custom skill to your team.
+
+See [`references/skills-bundle.md`](references/skills-bundle.md) for the full options.
 
 ---
 
@@ -177,7 +187,7 @@ For each option, the skill generates the matching artifacts:
 
 The generated install one-liner is the same install script you ran locally — your colleagues land on the **same** launcher, with the **same** skills, the **same** cyber rules, and a fresh token prompted from the keychain.
 
-See [`reference/distribution-modes.md`](reference/distribution-modes.md) for the security caveats of each mode.
+See [`references/distribution-modes.md`](references/distribution-modes.md) for the security caveats of each mode.
 
 ---
 
@@ -190,20 +200,38 @@ See [`reference/distribution-modes.md`](reference/distribution-modes.md) for the
 | **Gemini CLI** (Google) | S | AI Studio, Vertex AI Enterprise |
 | **Aider** | S | OpenAI / Anthropic / Azure / Bedrock / Vertex via LiteLLM |
 | **opencode** | S | Same as Aider |
+| **Continue.dev** | A | OpenAI / Anthropic / Azure / Bedrock / Vertex / LiteLLM (config.yaml) |
+| **Cline** (VS Code) | A | Anthropic / OpenAI / Bedrock / Vertex / LiteLLM via VS Code settings |
 
-Tier S = wrap trivial, full env-var driven. Tier A = wrap moderate, requires a pre-deployed config file. The first three are the recommended path — they're the most mature, the most documented, and the most likely to satisfy a corporate review.
+Tier S = wrap trivial, full env-var driven. Tier A = wrap moderate, requires a pre-deployed config file. The first three are the recommended path — they're the most mature, the most documented, and the most likely to satisfy a corporate review. Per-CLI details live under [`references/cli-*.md`](references/).
 
 ---
 
 ## Examples
 
-Three filled-out examples ship under [`reference/examples/`](reference/examples/):
+Three filled-out examples ship under [`references/examples/`](references/examples/):
 
-- [`acme-claude-litellm.md`](reference/examples/acme-claude-litellm.md) — Claude Code on a LiteLLM-on-Bedrock gateway with strip-proxy
-- [`acme-codex-azure.md`](reference/examples/acme-codex-azure.md) — Codex CLI on Azure OpenAI with admin lockdown
-- [`globex-gemini-vertex.md`](reference/examples/globex-gemini-vertex.md) — Gemini CLI on Vertex AI with EU data residency and ADC auth
+- [`acme-claude-litellm.md`](references/examples/acme-claude-litellm.md) — Claude Code on a LiteLLM-on-Bedrock gateway with strip-proxy
+- [`acme-codex-azure.md`](references/examples/acme-codex-azure.md) — Codex CLI on Azure OpenAI with admin lockdown
+- [`globex-gemini-vertex.md`](references/examples/globex-gemini-vertex.md) — Gemini CLI on Vertex AI with EU data residency and ADC auth
 
 Each file contains the JSON config + a "why those choices" commentary. Reading them is the fastest way to learn the skill.
+
+---
+
+## Quality & testing
+
+Every change to the skill is exercised by a five-stage local pipeline. Run any of them on demand:
+
+```bash
+bash scripts/smoke-test.sh              # end-to-end: generate a launcher from the ACME example, then run it
+bash scripts/lint-templates.sh          # static lint on every templates/**/*.tpl (vars, escapes, exec bits)
+python3 scripts/check-skill-quality.py  # programmatic SKILL.md audit (frontmatter, body, refs, forbidden terms)
+python3 -m pytest tests/                # unit + integration tests for render.py and generate.py (16 + N cases)
+python3 tests/branding/run_eval.py      # branding eval — 30 trap prompts checking for vendor-name leaks
+```
+
+Use `--strict` on `check-skill-quality.py` for a non-zero exit code on any miss (CI-friendly). Reports live under [`tests/`](tests/) (`SMOKE_REPORT.md`, `AUDIT_REPORT.md`, `SCRUB_REPORT.md`, `SYNC_REPORT.md`).
 
 ---
 

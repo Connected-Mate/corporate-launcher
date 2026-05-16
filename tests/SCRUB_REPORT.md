@@ -11,7 +11,7 @@ Comprehensive removal of tenant-specific references (SNCF, Patrick Code, TGV Eur
 - `scripts/interview.py` — removed `Powered by TGV Europe.` trailer; `dog.json` defaults -> `config.json`.
 - `scripts/render.py` — `dog.json` usage examples -> `config.json`; docstrings and arg help reference `interview answers` instead of `DOG answers`.
 - `scripts/generate.py` — pipeline docstring, CLI help, and `validate_dog` -> `validate_config`; all `dog.json` -> `config.json`; `DOG validation failed:` -> `Config validation failed:`.
-- `reference/interview-flow.md` — example URL `socle.ia.acme.fr` -> `gateway.acme.example`.
+- `references/interview-flow.md` — example URL `socle.ia.acme.fr` -> `gateway.acme.example`.
 
 ## Verification
 

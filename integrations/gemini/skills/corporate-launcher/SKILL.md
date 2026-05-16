@@ -13,7 +13,7 @@ https://github.com/Connected-Mate/corporate-launcher
 ## Quick workflow
 
 1. Phase 0 — confirm CLI + backend
-2. Phase 1 — interview (`reference/interview-flow.md`)
+2. Phase 1 — interview (`references/interview-flow.md`)
 3. Phase 2 — validate + confirm
 4. Phase 3 — render via `scripts/render.py`
 5. Phase 4 — distribution kit

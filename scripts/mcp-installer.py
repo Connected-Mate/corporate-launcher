@@ -16,7 +16,7 @@ script is a thin wrapper: it validates input, dispatches, prints the aider
 limitation banner when relevant, aggregates exit codes, and emits a final
 ``Configured N MCP servers for <cli>`` summary line.
 
-Server descriptor schema (per ``reference/skills-bundle.md``)::
+Server descriptor schema (per ``references/skills-bundle.md``)::
 
     {
         "name":    "jira",                                   # required

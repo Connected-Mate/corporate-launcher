@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Standalone interview CLI for Corporate Launcher.
 
-Parses `reference/interview-flow.md` to discover every variable, then walks
+Parses `references/interview-flow.md` to discover every variable, then walks
 the user through each section interactively (or reads answers from a file
 for CI / non-interactive runs).
 
@@ -16,7 +16,7 @@ Usage:
     python3 interview.py --flow path/to/flow.md # custom flow doc
 
 Anti-pattern avoided: questions are NOT hardcoded. If
-`reference/interview-flow.md` changes, this script adapts.
+`references/interview-flow.md` changes, this script adapts.
 """
 
 from __future__ import annotations

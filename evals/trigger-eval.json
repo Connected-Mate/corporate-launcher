@@ -1,0 +1,22 @@
+[
+  {"query": "ok so my boss said we cant just install claude code on our laptops, security says no. we have an internal litellm. can u set up smth so the team can still use it", "should_trigger": true, "note": "corporate constraint + internal litellm gateway, needs launcher wrapping"},
+  {"query": "build me a white-label cli that wraps codex on our azure openai", "should_trigger": true, "note": "explicit white-label CLI wrapping codex over Azure OpenAI"},
+  {"query": "i'm at globex industries — need to ship a corporate AI cli to my team that routes through our internal gateway", "should_trigger": true, "note": "corporate distribution + internal gateway routing"},
+  {"query": "wrap gemini for vertex EU residency", "should_trigger": true, "note": "wrap gemini CLI for Vertex with data residency constraint"},
+  {"query": "wrap codex for the cloud (we're on azure)", "should_trigger": true, "note": "wrap codex CLI for Azure cloud provider"},
+  {"query": "set up an internal copilot for my team — we have litellm in front of bedrock", "should_trigger": true, "note": "internal launcher with litellm proxy fronting bedrock"},
+  {"query": "white-label cursor for the engineering team, route through corp gateway", "should_trigger": true, "note": "white-label rebrand of CLI through corporate gateway"},
+  {"query": "we have aider + an openai-compatible proxy. need to ship to ~40 devs", "should_trigger": true, "note": "aider via OpenAI-compatible proxy, fleet distribution"},
+  {"query": "my company has a custom CA bundle at /etc/ssl/acme. need to make claude code work with it", "should_trigger": true, "note": "corporate CA bundle integration for claude code"},
+  {"query": "build me a launcher with cline that respects our proxy + ca + audit logs", "should_trigger": true, "note": "launcher with proxy, CA, audit log requirements"},
+  {"query": "what's the best AI coding CLI in 2026?", "should_trigger": false, "note": "general comparison question, no corporate launcher intent"},
+  {"query": "how do I install claude code on my mac", "should_trigger": false, "note": "personal install help, not corporate wrapping"},
+  {"query": "explain how bedrock cross-region inference works", "should_trigger": false, "note": "conceptual bedrock question, no CLI launcher"},
+  {"query": "I'm building an OpenAI wrapper SDK for our app", "should_trigger": false, "note": "SDK for app development, not a coding-CLI launcher"},
+  {"query": "set up a Vertex AI project for our data science team", "should_trigger": false, "note": "GCP project provisioning, not CLI wrapping"},
+  {"query": "write me a python script that calls the OpenAI API", "should_trigger": false, "note": "ad-hoc script, no launcher or distribution"},
+  {"query": "compare claude vs gpt-4 vs gemini for coding", "should_trigger": false, "note": "model comparison, no corporate deployment"},
+  {"query": "fix my .clinerules file", "should_trigger": false, "note": "personal cline config fix, not a launcher build"},
+  {"query": "help me configure HTTPS_PROXY on my laptop", "should_trigger": false, "note": "single-laptop proxy config, no CLI wrapping"},
+  {"query": "what's the npm command to install gemini cli", "should_trigger": false, "note": "install command lookup, not a corporate launcher"}
+]

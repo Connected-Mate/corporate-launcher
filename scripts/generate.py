@@ -8,7 +8,7 @@ distribution artefacts the creator asked for.
 
 Pipeline:
     1. Load and validate the config file (``${VAR}`` schema, see
-       ``reference/interview-flow.md`` for the validation rules).
+       ``references/interview-flow.md`` for the validation rules).
     2. For each CLI in ``WRAPPED_CLIS`` render
        ``templates/<cli>/`` and ``templates/shared/`` into
        ``INSTALL_DIR`` (and ``INSTALL_DIR/scripts/`` for shared bits).
@@ -43,6 +43,7 @@ import os
 import re
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -76,7 +77,7 @@ class GenerationError(RuntimeError):
 
 
 def validate_config(ctx: Mapping[str, object]) -> list[str]:
-    """Apply the validation rules from ``reference/interview-flow.md``.
+    """Apply the validation rules from ``references/interview-flow.md``.
 
     Returns a list of human-readable error strings (empty = OK).
     """
@@ -336,11 +337,24 @@ def render_distribution(
             print(f"  note: no scaffold.sh for {mode} — skipping auto-push")
 
     elif mode == "tarball":
+        if not dry_run:
+            slug = str(ctx.get("CORP_SLUG", "launcher"))
+            version = str(ctx.get("CORP_LAUNCHER_VERSION") or ctx.get("VERSION") or "0.0.0")
+            archive_name = f"{slug}-{version}.tar.gz"
+            archive_path = dist_dir / archive_name
+            arcroot = f"{slug}-{version}"
+            with tarfile.open(archive_path, "w:gz") as tf:
+                if install_dir.is_dir():
+                    tf.add(install_dir, arcname=arcroot)
+            digest = hashlib.sha256(archive_path.read_bytes()).hexdigest()
+            (dist_dir / "SHA256SUMS").write_text(
+                f"{digest}  {archive_name}\n", encoding="utf-8"
+            )
         build = dist_dir / "build.sh"
         if build.is_file() or dry_run:
             run_step(["bash", str(build)], dry_run=dry_run, cwd=dist_dir)
-        else:
-            print("  warning: tarball mode but no build.sh produced")
+        elif not dry_run:
+            print("  note: no build.sh produced for reproducible rebuilds")
 
     elif mode == "oneliner":
         # Render install.sh from a dedicated template if present, then
@@ -452,7 +466,7 @@ def main(argv: list[str] | None = None) -> int:
     dist_dir = (
         args.dist_dir.expanduser().resolve()
         if args.dist_dir
-        else install_dir.parent / "dist"
+        else install_dir / "dist"
     )
 
     # Dynamic, render-time defaults the templates expect.

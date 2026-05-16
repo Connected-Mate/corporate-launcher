@@ -1,7 +1,8 @@
 ---
 name: corporate-launcher
-description: Generates a secure, branded, organization-specific launcher that wraps Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline onto a corporate AI gateway, then helps the user distribute it to their team. Triggers when a user says their company "does not authorize" Claude / Codex / Gemini / Cursor, asks for a white-label CLI for their team, needs a wrapper for AWS Bedrock / Azure OpenAI / Vertex AI / LiteLLM, must enforce corporate proxy + SSL inspection + custom CA, or wants to bundle a set of internal skills for colleagues. Trigger phrases include "corporate launcher", "wrap claude code", "wrap codex", "wrap gemini", "wrap cursor", "wrap cline", "white label", "white-label cursor", "white-label cline", "internal AI CLI", "bedrock gateway", "azure openai cli", "vertex cli", "ship to my team", "internal copilot".
+description: Generates a secure, branded, organization-specific launcher that wraps Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline onto a corporate AI gateway, then helps the user distribute it to their team. Triggers when a user says their company "does not authorize" Claude / Codex / Gemini / Cursor, asks for a white-label CLI for their team, needs a wrapper for AWS Bedrock / Azure OpenAI / Vertex AI / LiteLLM, must enforce corporate proxy + SSL inspection + custom CA, or wants to bundle a set of internal skills for colleagues. Trigger phrases include "corporate launcher", "wrap claude code", "wrap codex", "wrap gemini", "white-label cursor", "white-label cline", "internal AI CLI", "bedrock gateway", "azure openai cli", "vertex cli", "ship to my team", "internal copilot". Make sure to use this skill whenever the user mentions wanting to wrap, white-label, or deploy an AI coding CLI inside their organization — even if they don't explicitly name the launcher pattern.
 allowed-tools: Read, Write, Edit, Bash, AskUserQuestion, Glob, Grep
+when_to_use: Invoke when an employee of a regulated org (bank, telco, public sector, defense, healthcare) needs an AI coding CLI but cannot use the vendor's public endpoint. The deliverable is always a runnable, branded launcher plus a distribution kit for colleagues — not just shell scripts or a one-off API call. Pair with a corporate gateway (Bedrock, Azure OpenAI, Vertex, LiteLLM).
 ---
 
 # Corporate Launcher
@@ -42,7 +43,7 @@ If they already named both, skip to Phase 1.
 
 ### Phase 1 — Run the config interview
 
-Read `reference/interview-flow.md` and walk through every section. Use `AskUserQuestion` for each step. Save answers to a session JSON in memory.
+Read `references/interview-flow.md` and walk through every section. Use `AskUserQuestion` for each step. Save answers to a session JSON in memory.
 
 Sections in order:
 
@@ -85,7 +86,7 @@ Based on the chosen distribution mode:
 - **One-liner URL** — emit a hosted `install.sh` plus the exact `curl ... | bash` command to share. Includes a checksum step.
 - **No distribution** — skip.
 
-See `reference/distribution-modes.md` for the security caveats of each mode.
+See `references/distribution-modes.md` for the security caveats of each mode.
 
 ### Phase 5 — Post-install
 
@@ -100,13 +101,13 @@ Print:
 
 ## Reference files (read on demand)
 
-- `reference/interview-flow.md` — exhaustive question script with the 9 sections
-- `reference/provider-matrix.md` — which CLI supports which backend
-- `reference/env-vars.md` — env vars per CLI per backend
-- `reference/security-patterns.md` — proxy detection, CA bundle, VPN gate, secret storage
-- `reference/skills-bundle.md` — how the skills bundling works, presets available
-- `reference/distribution-modes.md` — the 4 distribution modes and their trade-offs
-- `reference/examples/` — three filled-out examples (Claude/LiteLLM, Codex/Azure, Gemini/Vertex)
+- `references/interview-flow.md` — exhaustive question script with the 9 sections
+- `references/provider-matrix.md` — which CLI supports which backend
+- `references/env-vars.md` — env vars per CLI per backend
+- `references/security-patterns.md` — proxy detection, CA bundle, VPN gate, secret storage
+- `references/skills-bundle.md` — how the skills bundling works, presets available
+- `references/distribution-modes.md` — the 4 distribution modes and their trade-offs
+- `references/examples/` — three filled-out examples (Claude/LiteLLM, Codex/Azure, Gemini/Vertex)
 
 Read only what you need for the user's CLI + backend + distribution combo.
 
@@ -186,12 +187,14 @@ If any of these fails, fix it before declaring the install done.
 
 ---
 
-## Anti-patterns (do not do)
+## Anti-patterns (and the positive rule that replaces them)
 
-- Don't generate a launcher that calls the vendor's public API directly. The corporate gateway is the only allowed egress.
-- Don't store the API key in plaintext or in a world-readable file. Always chmod 600, prefer the OS keychain.
-- Don't disable SSL verification globally. Use `NODE_EXTRA_CA_CERTS` / `CODEX_CA_CERTIFICATE` / `REQUESTS_CA_BUNDLE` — process-scoped only.
-- Don't modify `/etc/hosts`, the system trust store, or any global config. Everything must be process-level + reversible by the uninstall.
-- Don't enable the underlying CLI's auto-update inside the corporate launcher (lock the version).
-- Don't ship a `curl ... | bash` one-liner without a checksum or signature step.
-- Don't bundle a skill from a public source the user didn't review — the cyber team needs an audit trail.
+Each rule is phrased as an imperative, with the *because* that justifies it. If a rule conflicts with the user's environment, surface the conflict in the post-install summary instead of silently breaking it.
+
+- **Route every request through the corporate gateway** (Bedrock, Azure OpenAI, Vertex, LiteLLM) — never call the vendor's public API directly, *because the corporate gateway is the only contractually-authorized egress* and direct calls bypass DLP, billing attribution, and the legal review the org already signed off on.
+- **Store the API key in the OS keychain, with a `chmod 600` dotfile fallback** — never plaintext, never world-readable, *because `chmod 600` + keychain is the documented baseline that the cyber sign-off relies on*; a world-readable key is treated as a leaked key.
+- **Scope SSL trust to the process** via `NODE_EXTRA_CA_CERTS` / `CODEX_CA_CERTIFICATE` / `REQUESTS_CA_BUNDLE` — never disable SSL verification globally, *because the corporate CA must be trusted only by the launcher, not by every other tool on the host*; a global toggle is a foot-gun the security team will refuse to ship.
+- **Keep every change process-level and reversible by `uninstall.sh`** — never touch `/etc/hosts`, the system trust store, or any global config, *because the uninstall must restore the machine to its pre-install state without root* so endpoint management tools don't flag drift.
+- **Lock the wrapped CLI to a pinned version** — never enable the underlying CLI's auto-update inside the launcher, *because an unannounced upstream change can break the brand override, the SSE strip-proxy, or the cyber rules*; upgrades go through a controlled bump + re-distribution.
+- **Ship the one-liner with a checksum or signature step** (`SHA256SUMS`, cosign, or minisign) — never publish a bare `curl ... | bash`, *because without integrity verification, a compromised host or MITM can swap the installer* and every colleague becomes a foothold.
+- **Bundle only skills the user has reviewed** (or that come from a vetted internal source) — never pull from a random public repo at install time, *because the cyber team needs an audit trail* for every prompt, hook, and MCP server that runs on a corporate machine.

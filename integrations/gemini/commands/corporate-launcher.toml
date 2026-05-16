@@ -11,7 +11,7 @@ Goal: Build a secure, branded, organization-specific launcher around an AI codin
 Follow the canonical workflow from the repo `SKILL.md`:
 
 Phase 0 — Confirm intent (which CLI + which backend). Skip if obvious.
-Phase 1 — Run the config interview from `reference/interview-flow.md`. Walk every section:
+Phase 1 — Run the config interview from `references/interview-flow.md`. Walk every section:
   1. Identity (brand name, sponsor, license)
   2. Provider (which CLI(s) to wrap)
   3. Backend (gateway URL, auth, region, models, fallback)

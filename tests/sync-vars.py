@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Audit template variables against reference/interview-flow.md.
+"""Audit template variables against references/interview-flow.md.
 
 Scans every ``templates/**/*.tpl`` file for ``${VAR}`` references and
 cross-checks them against the variable tables documented in
-``reference/interview-flow.md``.
+``references/interview-flow.md``.
 
 Three classes of drift are reported:
 
@@ -71,6 +71,17 @@ RUNTIME_WHITELIST: frozenset[str] = frozenset(
 DOC_ALIASES: frozenset[str] = frozenset(
     {
         "DIST_PUBLIC_FORCE",  # mentioned in validation rule #7
+        # Distribution-only credentials: documented as required env vars in
+        # interview-flow.md §9 (Distribution) and used inside upload-* shell
+        # templates via `${VAR:-default}` parameter expansion, which is the
+        # bash form — never the render-time ${VAR} form. Treat as documented
+        # so we don't flag them as dead spec.
+        "ARTIFACTORY_USER",
+        "ARTIFACTORY_PASS",
+        "ARTIFACTORY_TOKEN",
+        "AWS_PROFILE",
+        "NEXUS_USER",
+        "NEXUS_PASS",
     }
 )
 
@@ -165,7 +176,7 @@ def main() -> int:
     args = parser.parse_args()
 
     root: Path = args.root.resolve()
-    flow_md = root / "reference" / "interview-flow.md"
+    flow_md = root / "references" / "interview-flow.md"
     if not flow_md.exists():
         print(f"error: missing {flow_md}", file=sys.stderr)
         return 2

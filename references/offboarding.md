@@ -89,6 +89,6 @@ Intune / Workspace ONE have equivalent scripts. Trigger them via the same lifecy
 ## Pitfalls
 
 - **Stale tokens in long-running processes** — a `claude` session started before revocation may continue to work until the next gateway call. Enforce a **max token TTL of 7 days** at the gateway (LiteLLM `duration` field, Azure APIM expiry, Vertex SA key rotation). The CLI re-prompts at expiry and the user, now gone, never re-authenticates.
-- **MCP server tokens** — if the launcher pre-configures MCP servers (`reference/skills-bundle.md`), those servers may hold their own credentials (Jira PAT, Confluence token). `--scope all` does **not** revoke those — open a separate ticket per MCP integration.
+- **MCP server tokens** — if the launcher pre-configures MCP servers (`references/skills-bundle.md`), those servers may hold their own credentials (Jira PAT, Confluence token). `--scope all` does **not** revoke those — open a separate ticket per MCP integration.
 - **Cached SSO cookies** — Vertex AI via `gcloud auth application-default login` leaves credentials in `~/.config/gcloud/`. The MDM wipe script must clear that path too.
 - **Shared workstations** — if the user shared their laptop with a colleague (lab machine, training PC), revoke and re-issue the token for the remaining user.

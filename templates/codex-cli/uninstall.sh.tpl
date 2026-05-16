@@ -33,10 +33,10 @@ else
     C_GREEN=""; C_RED=""; C_YELLOW=""; C_BOLD=""; C_DIM=""; C_RESET=""
 fi
 
-info() { printf "  ${C_GREEN}[OK]${C_RESET} %s\n" "$1"; }
-warn() { printf "  ${C_YELLOW}[!!]${C_RESET} %s\n" "$1"; }
-fail() { printf "  ${C_RED}[KO]${C_RESET} %s\n" "$1" >&2; }
-step() { printf "\n${C_BOLD}%s${C_RESET}\n" "$1"; }
+info() { printf "  $\{C_GREEN\}[OK]$\{C_RESET\} %s\n" "$1"; }
+warn() { printf "  $\{C_YELLOW\}[!!]$\{C_RESET\} %s\n" "$1"; }
+fail() { printf "  $\{C_RED\}[KO]$\{C_RESET\} %s\n" "$1" >&2; }
+step() { printf "\n$\{C_BOLD\}%s$\{C_RESET\}\n" "$1"; }
 
 # tpl: ---------------------------------------------------------------------
 # tpl: Markers (must stay aligned with install.sh)
@@ -53,8 +53,8 @@ case "$(uname -s)" in
     *)       OS_TYPE="other" ;;
 esac
 
-printf "\n${C_BOLD}%s — uninstaller${C_RESET}\n" "${CORP_NAME}"
-printf "${C_DIM}install_dir: %s${C_RESET}\n" "$INSTALL_DIR"
+printf "\n$\{C_BOLD\}%s — uninstaller$\{C_RESET\}\n" "${CORP_NAME}"
+printf "$\{C_DIM\}install_dir: %s$\{C_RESET\}\n" "$INSTALL_DIR"
 
 # tpl: ---------------------------------------------------------------------
 # tpl: Step 1 — strip RC block from every plausible shell RC file
@@ -173,5 +173,5 @@ EOF_TMP
     nohup "$TMP_SCRIPT" >/dev/null 2>&1 &
 fi
 
-printf "\n${C_BOLD}Uninstall complete.${C_RESET}\n"
-printf "${C_DIM}Reload your shell (source your RC) to drop the function/alias.${C_RESET}\n\n"
+printf "\n$\{C_BOLD\}Uninstall complete.$\{C_RESET\}\n"
+printf "$\{C_DIM\}Reload your shell (source your RC) to drop the function/alias.$\{C_RESET\}\n\n"

@@ -4,6 +4,33 @@ After the launcher is generated locally, the skill asks how the creator wants to
 
 ---
 
+## Table of contents
+
+- [Quick comparison](#quick-comparison)
+- [The interview question](#the-interview-question)
+- [Mode 1 — Public GitHub repo](#mode-1--public-github-repo)
+- [Mode 2 — Private GitHub / GitLab repo](#mode-2--private-github--gitlab-repo)
+- [Mode 3 — Tarball + internal artifact registry](#mode-3--tarball--internal-artifact-registry)
+- [Mode 4 — One-liner install URL](#mode-4--one-liner-install-url)
+- [Mode 5 — No distribution](#mode-5--no-distribution)
+- [What about update channels?](#what-about-update-channels)
+- [Distribution mode × Skills bundle interactions](#distribution-mode--skills-bundle-interactions)
+- [Choosing a mode](#choosing-a-mode)
+
+---
+
+## Quick comparison
+
+| Mode | Setup time | Security audit | Update path | Best for |
+|---|---|---|---|---|
+| Mode 1 — Public Git | 5 min | low (anyone sees it) | git pull | OSS evangelism |
+| Mode 2 — Private Git | 10 min | medium | git pull | most enterprise |
+| Mode 3 — Tarball + registry | 30 min | high (signed) | re-pub | air-gapped, regulated |
+| Mode 4 — One-liner URL | 15 min | medium-high (with checksum) | re-run | quick rollout |
+| Mode 5 — Local only | 0 min | n/a | n/a | iteration |
+
+---
+
 ## The interview question
 
 ```
@@ -52,6 +79,18 @@ Final output: a URL the creator shares with the world.
 
 ⚠️ **Warning**: the skill refuses to ship a public repo if `${CC_PRIMARY_URL}` contains an internal hostname (`.internal`, `.local`, anything that resolves to RFC1918). The creator must explicitly override with `DIST_PUBLIC_FORCE=yes`.
 
+Trade-offs:
+
+**PROS**
+- ✅ Fastest setup (5 min, no auth on the consumer side).
+- ✅ Free hosting, free CI, free issue tracker.
+- ✅ Drive-by contributors and OSS goodwill.
+
+**CONS**
+- ❌ Anything you push is world-readable — secrets, internal hostnames, employee names leak forever.
+- ❌ No access control; you can't reach a specific subset of colleagues.
+- ❌ Public commit history reveals project velocity, gaps, and stack choices to competitors.
+
 ---
 
 ## Mode 2 — Private GitHub / GitLab repo
@@ -85,6 +124,18 @@ git clone https://gitlab.acme.internal/platform/copilot.git && \
     cd copilot && ./install.sh
 ```
 
+Trade-offs:
+
+**PROS**
+- ✅ Leverages existing corporate SSO / SSH / VPN — no new auth to design.
+- ✅ Clean `git pull` update path; colleagues already know the workflow.
+- ✅ Built-in audit trail (commits, MRs, code review) for compliance.
+
+**CONS**
+- ❌ Requires colleagues to have git access to the host (offline laptops are blocked).
+- ❌ No signed releases by default; trust is implicit in the host.
+- ❌ Updates are pull-based — you can't push a security fix, you can only hope users `git pull`.
+
 ---
 
 ## Mode 3 — Tarball + internal artifact registry
@@ -115,9 +166,16 @@ cd <slug>-<version> && ./install.sh
 ```
 
 Trade-offs:
-- ✅ Works behind air-gap.
-- ✅ Versioned, signable, auditable.
-- ❌ No update path without re-publishing a tarball.
+
+**PROS**
+- ✅ Works behind air-gap or zero-egress networks.
+- ✅ Versioned, signable, auditable — passes the strictest security reviews.
+- ✅ Plugs into existing artifact retention, SBOM, and CVE-scan pipelines.
+
+**CONS**
+- ❌ No update path without re-publishing a full tarball.
+- ❌ Heaviest setup (registry creds, GPG key, signing pipeline).
+- ❌ Colleagues must learn the verify-and-extract flow; higher friction than `git clone`.
 
 ---
 
@@ -153,6 +211,18 @@ curl -fsSL https://copilot.acme.internal/install.sh -o /tmp/install.sh && \
     cd /tmp && sha256sum -c install.sh.sha256 && bash install.sh
 ```
 
+Trade-offs:
+
+**PROS**
+- ✅ One-line install — lowest friction for the consumer.
+- ✅ Re-run pulls the latest; effectively free updates.
+- ✅ Works for colleagues on any OS without git or registry tooling.
+
+**CONS**
+- ❌ `curl | bash` is a trust statement; security teams often block it on principle.
+- ❌ You own the hosting (S3, NGINX, GitHub Pages) — uptime is on you.
+- ❌ No version pinning by default; "what did I install yesterday?" is hard to answer.
+
 ---
 
 ## Mode 5 — No distribution
@@ -161,6 +231,18 @@ The skill skips the dist step entirely. The launcher exists only on the creator'
 - The creator is still iterating and isn't ready to ship.
 - The launcher is a one-person experiment.
 - A separate ops process will handle distribution (Ansible, Puppet, Jamf, Intune).
+
+Trade-offs:
+
+**PROS**
+- ✅ Zero setup, zero hosting, zero auth.
+- ✅ Fastest iteration loop — edit and re-run locally.
+- ✅ No premature commitment to a distribution backend.
+
+**CONS**
+- ❌ Nobody else can use it; "works on my machine" by construction.
+- ❌ No version history, no rollback, no audit.
+- ❌ Trivial to lose (one `rm -rf` away).
 
 ---
 
@@ -183,3 +265,9 @@ For modes where atomic rollback is critical (production fleet), the creator shou
 | `local` (frozen folder) | tarball | the skills are immutable once shipped |
 
 The skill picks a sensible default based on the combination and confirms with the creator before generating.
+
+---
+
+## Choosing a mode
+
+If you don't know, pick Mode 2 (private git). It's the right answer 80% of the time.

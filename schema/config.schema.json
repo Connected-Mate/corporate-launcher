@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/example/corporate-launcher/schema/config.schema.json",
   "title": "Corporate Launcher Generated Config",
-  "description": "Validated input contract for scripts/generate.py. Every property here corresponds to an interview answer collected by scripts/interview.py and consumed by Jinja-style ${VAR} substitution in templates/**/*.tpl. Variables are documented in reference/interview-flow.md, reference/env-vars.md, reference/provider-matrix.md, reference/skills-bundle.md and reference/distribution-modes.md.",
+  "description": "Validated input contract for scripts/generate.py. Every property here corresponds to an interview answer collected by scripts/interview.py and consumed by Jinja-style ${VAR} substitution in templates/**/*.tpl. Variables are documented in references/interview-flow.md, references/env-vars.md, references/provider-matrix.md, references/skills-bundle.md and references/distribution-modes.md.",
   "type": "object",
   "additionalProperties": true,
 
@@ -72,7 +72,7 @@
   "properties": {
 
     "$comment_section_1": {
-      "description": "Section 1 — Identity (reference/interview-flow.md §1)"
+      "description": "Section 1 — Identity (references/interview-flow.md §1)"
     },
     "CORP_NAME": {
       "type": "string",
@@ -84,7 +84,7 @@
     "CORP_SLUG": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9-]{1,30}$",
-      "description": "Lowercase hyphenated slug used as the binary name, install dir, env-var prefix (rule from reference/interview-flow.md §Validation rule 1).",
+      "description": "Lowercase hyphenated slug used as the binary name, install dir, env-var prefix (rule from references/interview-flow.md §Validation rule 1).",
       "examples": ["acme-copilot", "globex-helper"]
     },
     "CORP_POWERED_BY": {
@@ -113,7 +113,7 @@
     },
 
     "$comment_section_2": {
-      "description": "Section 2 — Provider list (reference/interview-flow.md §2, reference/provider-matrix.md)"
+      "description": "Section 2 — Provider list (references/interview-flow.md §2, references/provider-matrix.md)"
     },
     "WRAPPED_CLIS": {
       "type": "array",
@@ -360,7 +360,7 @@
     "INCLUDE_UNINSTALL": { "$ref": "#/$defs/yesNo", "default": "yes" },
 
     "$comment_section_8": {
-      "description": "Section 8 — Skills bundle and MCP servers (reference/skills-bundle.md, reference/mcp-aider-note.md)"
+      "description": "Section 8 — Skills bundle and MCP servers (references/skills-bundle.md, references/mcp-aider-note.md)"
     },
     "SKILLS_MODE": {
       "type": "string",
@@ -406,11 +406,11 @@
       "type": "array",
       "default": [],
       "items": { "$ref": "#/$defs/mcpServer" },
-      "description": "Pre-configured MCP servers. Aider has no native MCP support (reference/mcp-aider-note.md) — combining MCP_SERVERS with aider in WRAPPED_CLIS yields a runtime warning."
+      "description": "Pre-configured MCP servers. Aider has no native MCP support (references/mcp-aider-note.md) — combining MCP_SERVERS with aider in WRAPPED_CLIS yields a runtime warning."
     },
 
     "$comment_section_9": {
-      "description": "Section 9 — Distribution (reference/distribution-modes.md)"
+      "description": "Section 9 — Distribution (references/distribution-modes.md)"
     },
     "DIST_MODE": {
       "type": "string",
@@ -664,7 +664,7 @@
       }
     },
     {
-      "$comment": "Info-level note (non-blocking): mixing aider in WRAPPED_CLIS with non-empty MCP_SERVERS is supported but Aider has no native MCP — see reference/mcp-aider-note.md. The launcher emits a runtime warning; the schema does not reject it.",
+      "$comment": "Info-level note (non-blocking): mixing aider in WRAPPED_CLIS with non-empty MCP_SERVERS is supported but Aider has no native MCP — see references/mcp-aider-note.md. The launcher emits a runtime warning; the schema does not reject it.",
       "if": {
         "allOf": [
           { "properties": { "WRAPPED_CLIS": { "type": "array", "contains": { "const": "aider" } } } },

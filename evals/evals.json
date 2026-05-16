@@ -1,0 +1,69 @@
+{
+  "skill_name": "corporate-launcher",
+  "evals": [
+    {
+      "id": 0,
+      "name": "claude-code-litellm-bedrock",
+      "prompt": "My employer won't let me install Claude Code. We have a LiteLLM proxy in front of Bedrock at https://litellm.acme.internal. Can you build me a corporate launcher?",
+      "expected_output": "Skill triggers and runs the interview flow. It pre-fills WRAPPED_CLIS=[\"claude-code\"], CC_BACKEND=LiteLLM, CC_PRIMARY_URL=https://litellm.acme.internal, forces CC_NEEDS_STRIP_PROXY=yes (Bedrock+LiteLLM rule), and asks the remaining Section 1 (Identity), 4 (Network), 5 (Cyber), 8 (Skills), 9 (Distribution) questions before generating a branded Claude Code wrapper with strip-proxy.js, vpn-check, cyber-rules and an install/uninstall pair.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 1,
+      "name": "codex-azure-openai-ca-bundle",
+      "prompt": "Build a corporate launcher around Codex CLI for Azure OpenAI at our-resource.openai.azure.com. We have a CA bundle at /etc/ssl/acme-ca.pem.",
+      "expected_output": "Skill picks the Codex CLI branch (Section 3.B), sets CX_BACKEND=Azure OpenAI, CX_PRIMARY_URL from the resource hostname, CX_AUTH_ENV_KEY=AZURE_OPENAI_API_KEY, CX_WIRE_API=responses (or chat-completions on confirmation), CA_BUNDLE_PATH=/etc/ssl/acme-ca.pem and wires CODEX_CA_CERTIFICATE / REQUESTS_CA_BUNDLE at process scope. It then asks the remaining Identity, Cyber, Branding and Distribution questions before generating the launcher and a /etc/codex/requirements.toml lockdown by default.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "name": "cursor-vertex-eu-residency",
+      "prompt": "We use Cursor and need to route AI through our internal Vertex AI gateway with EU residency (europe-west4). I'm Alice, our DevOps lead.",
+      "expected_output": "Skill recognises Cursor as a VS Code fork and routes to the Cline branch (Section 2 option 7 + Section 3.D), since Cursor's native chat can't be re-pointed but the Cline extension can. It sets GM_VERTEX_LOCATION=europe-west4, LLM_BACKEND=vertex, CLINE_TARGET_IDES=[\"cursor\"], CLINE_DISABLE_MCP_MARKETPLACE=yes, then collects Identity + gateway URL + auth (ADC vs service-account) + Cyber + Distribution. Generates a Cline settings.json wrapper plus install.sh that drops the extension config into Cursor's user settings.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 3,
+      "name": "gemini-cli-vertex-adc-proxy",
+      "prompt": "Wrap Gemini CLI for our team. We have a custom CA at /etc/ssl/corp.pem and a proxy at proxy.acme:8080. ADC auth, GCP project 'acme-ai-prod'.",
+      "expected_output": "Skill enters the Gemini CLI branch (Section 3.C): GM_BACKEND=Vertex AI, GM_VERTEX_PROJECT=acme-ai-prod, GM_AUTH_MODE=ADC, GM_AUTH_ENFORCED_TYPE=vertex. Network section is pre-filled with PROXY_HOST=proxy.acme, PROXY_PORT=8080, CA_BUNDLE_PATH=/etc/ssl/corp.pem. It then asks the remaining Identity, Cyber, Skills and Distribution questions, validates the recap and generates a Gemini launcher with settings.json locking the auth type and a proxy-detect.sh wired to the corp proxy.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 4,
+      "name": "white-label-private-repo-design-pack-mcp",
+      "prompt": "I want to ship a white-label CLI to my team via a private GitHub repo, with the design-pack skills bundled and 2 MCP servers (Jira + GitHub) pre-configured.",
+      "expected_output": "Skill jumps directly to Sections 8 (Skills bundle) and 9 (Distribution): SKILLS_PRESETS=[\"design-pack\"], MCP_SERVERS=[{name:jira,...},{name:github,...}], DIST_MODE=private-git, DIST_REPO_HOST=github, DIST_REPO_VISIBILITY=private. It first backs up and asks Section 1 (brand name, sponsor, org) and Section 2/3 (which CLI + backend) before generating, then scaffolds a private-repo tree with .gitignore, INTERNAL.md, the bundled skills folder, MCP settings.json entries, and a gh repo create --push command.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 5,
+      "name": "codex-openai-direct-admin-lockdown",
+      "prompt": "Our DSI won't let employees install Codex CLI. We need to wrap it for OpenAI direct, with admin lockdown so no one can switch to another provider.",
+      "expected_output": "Skill goes to the Codex branch: CX_BACKEND=OpenAI direct, CX_REQUIRE_LOCKDOWN=yes (generates /etc/codex/requirements.toml), CX_FORCED_LOGIN_METHOD=apikey, CX_APPROVAL_POLICY=on-request, FORBIDDEN_TERMS includes OpenAI/ChatGPT for the brand override. It then collects remaining Identity, Network, Cyber, Distribution sections and generates a launcher whose system prompt + cyber-rules.md hide the underlying vendor and a lockdown file the user must place under /etc with sudo.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 6,
+      "name": "aider-litellm-oneliner-curl-bash",
+      "prompt": "Build me a launcher I can distribute via a one-liner curl|bash on our intranet. Aider + LiteLLM.",
+      "expected_output": "Skill picks Aider (Section 3.D), LLM_BACKEND=openai-compatible, asks LLM_OPENAI_BASE_URL (LiteLLM gateway), then jumps to Section 9: DIST_MODE=oneliner, validates DIST_ONELINER_HOST is HTTPS (rule 8), forces a SHA256SUMS + signature step. Remaining Identity, Cyber and Skills sections are asked, then it generates dist/install.sh, the exact curl https://.../install.sh | bash one-liner, and a checksum verification snippet bundled into the launcher.",
+      "files": [],
+      "assertions": []
+    },
+    {
+      "id": 7,
+      "name": "cline-inside-cursor-openai-gateway",
+      "prompt": "I want to use Cline inside Cursor at my company. We have an OpenAI-compatible gateway.",
+      "expected_output": "Skill selects Cline (WRAPPED_CLIS=[\"cline\"]) and Section 3.D OpenAI-compatible branch: LLM_OPENAI_BASE_URL=required, CLINE_TARGET_IDES=[\"cursor\"], CLINE_AUTO_APPROVE=no, CLINE_DISABLE_MCP_MARKETPLACE=yes. It asks the gateway URL, primary model, Identity, Cyber and Distribution sections, then generates a Cursor-targeted install.sh that drops Cline's settings into Cursor's user settings.json with the launcher's brand and corp CA wired in.",
+      "files": [],
+      "assertions": []
+    }
+  ]
+}

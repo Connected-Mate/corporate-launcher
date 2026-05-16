@@ -2,7 +2,7 @@
 
 This walkthrough shows the full path to add a new CLI — e.g. "I want corporate-launcher to wrap Cursor CLI" — from research to merged PR. Plan on 1-2 hours for a Tier S CLI (fully ENV-driven), more for a CLI with a custom config language.
 
-The supported set lives in `reference/provider-matrix.md`. The interview branches live in `reference/interview-flow.md`. Both must stay in lockstep with `templates/<cli-name>/`.
+The supported set lives in `references/provider-matrix.md`. The interview branches live in `references/interview-flow.md`. Both must stay in lockstep with `templates/<cli-name>/`.
 
 ---
 
@@ -14,7 +14,7 @@ Before writing any template, document the CLI in plain prose. You need three ans
 - **Native config file** path and format (`~/.foo/config.toml`, `~/.config/foo/foo.json`, …).
 - **Auth model** — bearer token, API key, AWS SDK chain, GCP ADC, OAuth device flow.
 
-Add a new row to `reference/provider-matrix.md` under the right tier:
+Add a new row to `references/provider-matrix.md` under the right tier:
 
 - **Tier S** = fully ENV-driven, no config file mutation needed.
 - **Tier A** = needs a pre-deployed config file (Codex, Cline).
@@ -54,7 +54,7 @@ For each `.sh.tpl` create a `.ps1.tpl` sibling: `launcher.ps1.tpl`, `install.ps1
 
 ## Step 4 — Wire the interview flow
 
-Open `reference/interview-flow.md`.
+Open `references/interview-flow.md`.
 
 - **Section 2** — add the new CLI to the multi-select list with a one-line pitch ("**Cursor CLI** (Anysphere) — JSON-config-driven, OpenAI-compatible only").
 - **Section 3** — add a new branch (`3.E — Cursor CLI branch`) with a table of CLI-specific questions. Use a 2-letter prefix per CLI for the variable names (`CC_*` for Claude Code, `CX_*` for Codex, etc. — pick an unused pair).
@@ -65,13 +65,13 @@ Every branch must cover: backend choice, gateway URL, default model, auth env va
 
 ## Step 5 — Document the env vars
 
-Add a subsection to `reference/env-vars.md` listing every env var the new templates set. Group by purpose: auth, network, telemetry kill, model selection. Cross-link to the row in `provider-matrix.md`.
+Add a subsection to `references/env-vars.md` listing every env var the new templates set. Group by purpose: auth, network, telemetry kill, model selection. Cross-link to the row in `provider-matrix.md`.
 
 ---
 
 ## Step 6 — Add a worked example
 
-Create `reference/examples/<corp>-<cli>-<backend>.md` showing the full interview answers, the rendered tree, and the final launcher command. Use a realistic fake company (`acme-`, `globex-`) consistent with existing examples.
+Create `references/examples/<corp>-<cli>-<backend>.md` showing the full interview answers, the rendered tree, and the final launcher command. Use a realistic fake company (`acme-`, `globex-`) consistent with existing examples.
 
 ---
 

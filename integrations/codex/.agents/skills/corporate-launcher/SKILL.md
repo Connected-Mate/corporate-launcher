@@ -9,12 +9,12 @@ The canonical skill instructions, templates, and reference files live in the rep
 - repo root: https://github.com/Connected-Mate/corporate-launcher
 - canonical SKILL.md: `<repo-root>/SKILL.md`
 - templates: `<repo-root>/templates/`
-- reference: `<repo-root>/reference/`
+- reference: `<repo-root>/references/`
 
 On Codex CLI this file acts as the **entry point**. When the skill is triggered, follow the workflow defined in the canonical `SKILL.md`:
 
 1. **Phase 0** — confirm intent (which CLI + which backend)
-2. **Phase 1** — run the config interview via `reference/interview-flow.md`
+2. **Phase 1** — run the config interview via `references/interview-flow.md`
 3. **Phase 2** — validate, show recap, ask confirmation
 4. **Phase 3** — render templates via `scripts/render.py`
 5. **Phase 4** — generate the distribution kit
