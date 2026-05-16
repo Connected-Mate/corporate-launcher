@@ -3,11 +3,11 @@
 
 This is the master entry point called by the skill at the end of the
 interview. It takes the answers collected from the interview (a JSON
-"DOG" file) and produces the full launcher tree on disk, plus any
+config file) and produces the full launcher tree on disk, plus any
 distribution artefacts the creator asked for.
 
 Pipeline:
-    1. Load and validate the DOG file (``${VAR}`` schema, see
+    1. Load and validate the config file (``${VAR}`` schema, see
        ``reference/interview-flow.md`` for the validation rules).
     2. For each CLI in ``WRAPPED_CLIS`` render
        ``templates/<cli>/`` and ``templates/shared/`` into
@@ -26,9 +26,9 @@ Pipeline:
        distribution artefact URL or path).
 
 Usage:
-    python3 generate.py --config dog.json
-    python3 generate.py --config dog.json --out ~/.local/share/<slug>
-    python3 generate.py --config dog.json --dry-run
+    python3 generate.py --config config.json
+    python3 generate.py --config config.json --out ~/.local/share/<slug>
+    python3 generate.py --config config.json --dry-run
 
 Pure Python 3.10+, stdlib only. Always delegates rendering to
 ``scripts/render.py`` (no inline ``${VAR}`` substitution).
@@ -75,7 +75,7 @@ class GenerationError(RuntimeError):
 # ----------------------------------------------------------------------- #
 
 
-def validate_dog(ctx: Mapping[str, object]) -> list[str]:
+def validate_config(ctx: Mapping[str, object]) -> list[str]:
     """Apply the validation rules from ``reference/interview-flow.md``.
 
     Returns a list of human-readable error strings (empty = OK).
@@ -209,6 +209,12 @@ def render_clis(
     wrapped = ctx.get("WRAPPED_CLIS") or []
     if isinstance(wrapped, str):
         wrapped = [wrapped]
+    # Provide PROVIDER_KIND for shared templates (launcher-update.sh references
+    # it as a fall-back when the runtime manifest is absent). Defaults to the
+    # first wrapped CLI; can be overridden in the config.
+    ctx = dict(ctx)
+    if "PROVIDER_KIND" not in ctx:
+        ctx["PROVIDER_KIND"] = wrapped[0] if wrapped else "claude-code"
     for cli in wrapped:
         src = TEMPLATES / cli
         if not src.is_dir():
@@ -269,7 +275,7 @@ def run_skills_installer(
 
 
 def run_mcp_installer(
-    ctx: Mapping[str, object], *, dry_run: bool
+    ctx: Mapping[str, object], install_dir: Path, *, dry_run: bool
 ) -> None:
     """Call scripts/mcp-installer.py once per wrapped CLI."""
     servers = ctx.get("MCP_SERVERS") or []
@@ -282,17 +288,20 @@ def run_mcp_installer(
         if cli == "continue-dev":
             print(f"  skip MCP installer for {cli} (no native MCP support yet)")
             continue
-        rc = run_step(
-            [
-                sys.executable,
-                str(HERE / "mcp-installer.py"),
-                "--cli",
-                cli,
-                "--servers",
-                json.dumps(servers),
-            ],
-            dry_run=dry_run,
-        )
+        # Target the launcher's own settings.json, never the operator's
+        # personal ~/.claude/settings.json.
+        cli_settings = install_dir / "settings.json"
+        cmd = [
+            sys.executable,
+            str(HERE / "mcp-installer.py"),
+            "--cli",
+            cli,
+            "--servers",
+            json.dumps(servers),
+        ]
+        if cli == "claude-code":
+            cmd.extend(["--settings", str(cli_settings)])
+        rc = run_step(cmd, dry_run=dry_run)
         if rc != 0 and not dry_run:
             raise GenerationError(f"mcp-installer for {cli} exited with code {rc}")
 
@@ -396,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument("--config", required=True, type=Path, help="DOG JSON file (interview answers)")
+    p.add_argument("--config", required=True, type=Path, help="JSON config file (interview answers)")
     p.add_argument(
         "--out",
         type=Path,
@@ -417,7 +426,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument(
         "--skip-validate",
         action="store_true",
-        help="Skip the DOG validation rules (use with care)",
+        help="Skip the config validation rules (use with care)",
     )
     args = p.parse_args(argv)
 
@@ -432,9 +441,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if not args.skip_validate:
-        errs = validate_dog(ctx)
+        errs = validate_config(ctx)
         if errs:
-            print("DOG validation failed:", file=sys.stderr)
+            print("Config validation failed:", file=sys.stderr)
             for e in errs:
                 print(f"  - {e}", file=sys.stderr)
             return 2
@@ -459,7 +468,7 @@ def main(argv: list[str] | None = None) -> int:
         run_skills_installer(ctx, install_dir, dry_run=args.dry_run)
 
         print("\n[3/4] Configuring MCP servers ...")
-        run_mcp_installer(ctx, dry_run=args.dry_run)
+        run_mcp_installer(ctx, install_dir, dry_run=args.dry_run)
 
         print("\n[4/4] Rendering distribution artefacts ...")
         produced_dist = render_distribution(ctx, install_dir, dist_dir, dry_run=args.dry_run)

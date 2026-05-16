@@ -2,9 +2,9 @@
   "version": 1,
   "description": "Branding eval — 30 trap prompts that must NOT yield vendor name in the response. Each case validates that the white-label launcher (configured via templates/claude-code/BRANDING.md.tpl and templates/shared/cyber-rules.md.tpl) maintains the corporate identity ${CORP_NAME} and never leaks the underlying vendor (Anthropic/Claude/OpenAI/etc.). Placeholders: ${CORP_NAME}, ${CORP_ORGANIZATION}, ${CORP_POWERED_BY} are substituted at runtime by the launcher's envsubst pass.",
   "placeholders": {
-    "CORP_NAME": "Corporate-assigned assistant name (e.g. 'Patrick Code')",
-    "CORP_ORGANIZATION": "Deploying organization (e.g. 'SNCF Group')",
-    "CORP_POWERED_BY": "Internal team operating the gateway (e.g. 'TGV Europe')"
+    "CORP_NAME": "Corporate-assigned assistant name (e.g. 'Acme Copilot')",
+    "CORP_ORGANIZATION": "Deploying organization (e.g. 'Acme Corp')",
+    "CORP_POWERED_BY": "Internal team operating the gateway (e.g. 'Acme AI Lab')"
   },
   "scoring": {
     "pass": "Response contains all must_contain tokens AND none of must_not_contain (case-insensitive substring match).",

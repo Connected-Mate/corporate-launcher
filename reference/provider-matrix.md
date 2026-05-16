@@ -16,7 +16,7 @@ How each AI coding CLI can be wrapped onto a corporate gateway. Use this to vali
 
 | CLI | Approach |
 |---|---|
-| **Cline** (VS Code) | Pre-deploy `settings.json` with `cline.apiProvider=openai-compatible`, `cline.baseUrl`, `cline.apiKey`. Respects `NODE_EXTRA_CA_CERTS` and `HTTPS_PROXY`. |
+| **Cline** (VS Code / Cursor / VSCodium) | Marketplace id `saoudrizwan.claude-dev`. Pre-deploy user `settings.json` with `cline.apiProvider="openai"`, `cline.openAiBaseUrl`, `cline.openAiApiKey`, `cline.openAiModelId`, `cline.customInstructions` (path to BRANDING.md), `cline.telemetryOptOut=true`, `cline.errorReportingOptOut=true`. Respects `NODE_EXTRA_CA_CERTS` and `HTTPS_PROXY` because it runs in the VS Code extension host (Node). Identity rebrand via `~/Documents/Cline/Rules/00-<slug>-identity.md` (global rule, applied to every workspace). Works inside Cursor and VSCodium with the same extension id and the same `--install-extension` flag (both are VS Code forks). Keep `security.workspace.trust.enabled=true` — disabling folder trust would let Cline auto-execute commands in untrusted clones. |
 | **Sourcegraph Cody** | Site config server-side. The "launcher" pushes `SRC_ENDPOINT` + token. |
 | **Codex CLI** | `~/.codex/config.toml` + `requirements.toml` (admin lockdown). Use `CODEX_CA_CERTIFICATE` for corp CA. Known bug: `HTTPS_PROXY` not yet honored everywhere (issue #4242 — workaround = transparent proxy at network level). |
 
@@ -24,7 +24,7 @@ How each AI coding CLI can be wrapped onto a corporate gateway. Use this to vali
 
 | CLI | Why excluded |
 |---|---|
-| **Cursor** | GUI-only Electron app. Requires HTTPS public URL — incompatible with an internal-only gateway unless you expose it via Cloudflare/AWS LB. |
+| **Cursor** (native chat / Tab) | Cursor's own assistant requires an HTTPS public URL routed through Cursor's infra — incompatible with an internal-only gateway unless exposed via Cloudflare/AWS LB. **Workaround supported here:** wrap the **Cline** extension *inside* Cursor (Cursor is a VS Code fork, accepts `saoudrizwan.claude-dev`). The user keeps Cursor as their editor but routes AI calls through the corporate gateway via Cline. |
 | **Windsurf** | Enterprise variant is full self-host (Docker Compose / Helm). The "launcher" becomes an ops project. |
 | **Tabnine Enterprise** | Config via admin GUI server-side. No file to template. |
 
@@ -89,7 +89,8 @@ HTTPS_PROXY=http://proxy.acme.fr:8080
 HTTP_PROXY=http://proxy.acme.fr:8080
 NO_PROXY=127.0.0.1,localhost,.internal.acme.fr
 
-# Node.js (Claude Code, Gemini CLI, opencode, Cline)
+# Node.js (Claude Code, Gemini CLI, opencode, Continue.dev, Cline)
+# Cline runs inside the VS Code extension host (Node) — same var applies.
 NODE_EXTRA_CA_CERTS=/etc/ssl/acme-corp-bundle.pem
 
 # Python (Aider)

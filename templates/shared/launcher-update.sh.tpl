@@ -147,9 +147,9 @@ _upd_underlying_cli() {
     case "$UPD_PROVIDER" in
         claude-code)
             command -v npm >/dev/null 2>&1 || { _upd_fail "npm missing"; return 1; }
-            if [ -n "$\{CC_PIN_VERSION:-\}" ] && [ "${CC_PIN_VERSION}" != "" ]; then
-                _upd_info "pinned to ${CC_PIN_VERSION}, reinstalling"
-                npm install -g "@anthropic-ai/claude-code@${CC_PIN_VERSION}"
+            if [ -n "$\{CC_PIN_VERSION:-\}" ] && [ "$\{CC_PIN_VERSION\}" != "" ]; then
+                _upd_info "pinned to $\{CC_PIN_VERSION\}, reinstalling"
+                npm install -g "@anthropic-ai/claude-code@$\{CC_PIN_VERSION\}"
             else
                 npm update -g @anthropic-ai/claude-code
             fi

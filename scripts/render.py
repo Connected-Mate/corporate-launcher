@@ -7,8 +7,8 @@ Lines starting with `# tpl:` (or `// tpl:`) are stripped from the output.
 Escape `${...}` that should remain literal as `$\{...\}`.
 
 Usage:
-    render.py --context dog.json --template templates/claude-code/launcher.sh.tpl --out build/pcode
-    render.py --context dog.json --tree templates/claude-code --out build/
+    render.py --context config.json --template templates/claude-code/launcher.sh.tpl --out build/pcode
+    render.py --context config.json --tree templates/claude-code --out build/
 
 The --tree variant recurses through a directory, rendering every .tpl file
 and copying non-template files verbatim.
@@ -44,6 +44,12 @@ def render(text: str, ctx: Mapping[str, object]) -> str:
         value = ctx[name]
         if value is None:
             raise UnresolvedVariable(f"{name} (null)")
+        # Lists/dicts: emit JSON so shell templates can parse them
+        # (Python's str() of a list uses single quotes which break tr/jq).
+        if isinstance(value, (list, dict)):
+            return json.dumps(value)
+        if isinstance(value, bool):
+            return "true" if value else "false"
         return str(value)
 
     # Pass 1: substitute real ${VAR}
@@ -99,7 +105,7 @@ def render_tree(src_dir: Path, dst_dir: Path, ctx: Mapping[str, object]) -> list
 
 
 def load_context(path: Path) -> dict[str, object]:
-    """Load DOG answers from a JSON file."""
+    """Load interview answers from a JSON config file."""
     raw = json.loads(path.read_text(encoding="utf-8"))
     ctx: dict[str, object] = {}
     for k, v in raw.items():
@@ -128,7 +134,7 @@ def validate(ctx: Mapping[str, object]) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--context", required=True, type=Path, help="JSON file with DOG answers")
+    p.add_argument("--context", required=True, type=Path, help="JSON file with interview answers")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--template", type=Path, help="Single .tpl file to render")
     g.add_argument("--tree", type=Path, help="Directory of templates to render recursively")

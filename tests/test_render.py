@@ -50,11 +50,11 @@ UnresolvedVariable = render_mod.UnresolvedVariable
 def ctx() -> dict[str, object]:
     """A minimal, fully populated rendering context."""
     return {
-        "CORP_NAME": "Patrick Code",
-        "CORP_SLUG": "patrick-code",
-        "CORP_POWERED_BY": "TGV Europe",
-        "CORP_ORGANIZATION": "SNCF",
-        "CYBER_AUTHORITY": "Direction Cybersecurite SNCF",
+        "CORP_NAME": "Acme Copilot",
+        "CORP_SLUG": "acme-copilot",
+        "CORP_POWERED_BY": "Acme AI Lab",
+        "CORP_ORGANIZATION": "Acme Corp",
+        "CYBER_AUTHORITY": "Corporate Security Office",
         "FORBIDDEN_TERMS": "Claude, Anthropic",
     }
 
@@ -121,7 +121,7 @@ def test_render_file_writes_to_dst_and_preserves_exec_bit(
 
     assert dst.is_file()
     body = dst.read_text(encoding="utf-8")
-    assert "echo Patrick Code" in body
+    assert "echo Acme Copilot" in body
     # Executable bit preserved on the destination.
     assert dst.stat().st_mode & 0o111, "executable bit was lost"
 
@@ -156,7 +156,7 @@ def test_render_tree_renders_tpl_and_copies_others(
     # Rendered template: .tpl suffix stripped, variable substituted.
     rendered = dst_dir / "greet.txt"
     assert rendered.is_file()
-    assert rendered.read_text(encoding="utf-8") == "hi Patrick Code"
+    assert rendered.read_text(encoding="utf-8") == "hi Acme Copilot"
 
     # Verbatim copy: contents byte-for-byte identical (no substitution).
     copied = dst_dir / "nested" / "data.json"
@@ -178,11 +178,11 @@ def test_render_tree_substitutes_in_directory_names(
     dst_dir = tmp_path / "out"
     render_tree(src_dir, dst_dir, ctx)
 
-    expected = dst_dir / "patrick-code" / "config" / "app.conf"
+    expected = dst_dir / "acme-copilot" / "config" / "app.conf"
     assert expected.is_file()
     # NOTE: render() splits-then-joins on "\n", which drops a trailing newline.
     # We accept either form here so the test documents the actual contract.
-    assert expected.read_text(encoding="utf-8").rstrip("\n") == "name=Patrick Code"
+    assert expected.read_text(encoding="utf-8").rstrip("\n") == "name=Acme Copilot"
 
 
 # ---------------------------------------------------------------------------
@@ -191,16 +191,16 @@ def test_render_tree_substitutes_in_directory_names(
 def test_load_context_derives_corp_slug_upper(tmp_path: Path) -> None:
     """``CORP_SLUG_UPPER`` is derived from ``CORP_SLUG`` when absent."""
     path = tmp_path / "ctx.json"
-    path.write_text(json.dumps({"CORP_SLUG": "patrick-code"}), encoding="utf-8")
+    path.write_text(json.dumps({"CORP_SLUG": "acme-copilot"}), encoding="utf-8")
     ctx = load_context(path)
-    assert ctx["CORP_SLUG_UPPER"] == "PATRICK_CODE"
+    assert ctx["CORP_SLUG_UPPER"] == "ACME_COPILOT"
 
 
 def test_load_context_does_not_override_explicit_upper(tmp_path: Path) -> None:
     """An explicit ``CORP_SLUG_UPPER`` is preserved as-is."""
     path = tmp_path / "ctx.json"
     path.write_text(
-        json.dumps({"CORP_SLUG": "patrick-code", "CORP_SLUG_UPPER": "CUSTOM"}),
+        json.dumps({"CORP_SLUG": "acme-copilot", "CORP_SLUG_UPPER": "CUSTOM"}),
         encoding="utf-8",
     )
     ctx = load_context(path)
@@ -215,7 +215,7 @@ def test_load_context_rejects_non_conforming_keys(
     path.write_text(
         json.dumps(
             {
-                "CORP_NAME": "Patrick Code",
+                "CORP_NAME": "Acme Copilot",
                 "lowercase": "nope",
                 "Has-Dash": "nope",
                 "1LEADING_DIGIT": "nope",
@@ -269,7 +269,7 @@ def test_end_to_end_cyber_rules_template(
     # No unresolved placeholders remain.
     assert "${" not in out, "unresolved variable in rendered output"
     # Substitutions actually landed.
-    assert "Patrick Code" in out
-    assert "TGV Europe" in out
-    assert "SNCF" in out
-    assert "Direction Cybersecurite SNCF" in out
+    assert "Acme Copilot" in out
+    assert "Acme AI Lab" in out
+    assert "Acme Corp" in out
+    assert "Corporate Security Office" in out

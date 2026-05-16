@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/sncf/corporate-launcher/schema/config.schema.json",
+  "$id": "https://github.com/example/corporate-launcher/schema/config.schema.json",
   "title": "Corporate Launcher Generated Config",
   "description": "Validated input contract for scripts/generate.py. Every property here corresponds to an interview answer collected by scripts/interview.py and consumed by Jinja-style ${VAR} substitution in templates/**/*.tpl. Variables are documented in reference/interview-flow.md, reference/env-vars.md, reference/provider-matrix.md, reference/skills-bundle.md and reference/distribution-modes.md.",
   "type": "object",

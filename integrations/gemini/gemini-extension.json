@@ -1,0 +1,6 @@
+{
+  "name": "corporate-launcher",
+  "version": "1.0.0",
+  "description": "Generates a secure, branded, organization-specific launcher that wraps Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline onto a corporate AI gateway. Triggers on phrases like 'wrap claude for my company', 'white-label cline', 'internal AI CLI', 'bedrock gateway', 'azure openai cli', 'vertex cli'.",
+  "contextFileName": "GEMINI.md"
+}

@@ -367,7 +367,7 @@ server.on('clientError', (err, socket) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-    console.error(`[${CORP_NAME} strip-proxy v2] listening on http://127.0.0.1:${PORT} -> ${UPSTREAM.href}`);
+    console.error(`[${CORP_NAME} strip-proxy v2] listening on http://127.0.0.1:$\{PORT\} -> ${UPSTREAM.href}`);
     if (VERBOSE) console.error('[strip] verbose mode ON');
-    if (SESSION) console.error(`[strip] session=${SESSION}`);
+    if (SESSION) console.error(`[strip] session=$\{SESSION\}`);
 });

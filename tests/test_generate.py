@@ -2,9 +2,9 @@
 
 The orchestrator is expected to expose the CLI::
 
-    python3 generate.py --config dog.json --out PATH [--dry-run]
+    python3 generate.py --config config.json --out PATH [--dry-run]
 
-It must, given a validated DOG JSON config:
+It must, given a validated JSON config:
   1. Resolve the wrapped CLIs and copy/render the right template trees.
   2. Run optional sub-installers (skills, mcp) via subprocess.
   3. Produce the chosen distribution artefacts under ``<out>/dist/``.
@@ -60,7 +60,7 @@ def generate() -> Any:
 
 
 def _minimal_config(**overrides: Any) -> dict[str, Any]:
-    """Smallest DOG payload that should pass validation for a claude-code wrap."""
+    """Smallest config payload that should pass validation for a claude-code wrap."""
     base: dict[str, Any] = {
         "CORP_NAME": "Acme Copilot",
         "CORP_SLUG": "acme-copilot",
@@ -125,7 +125,7 @@ def _minimal_config(**overrides: Any) -> dict[str, Any]:
 
 
 def _write_config(tmp_path: Path, **overrides: Any) -> Path:
-    cfg = tmp_path / "dog.json"
+    cfg = tmp_path / "config.json"
     cfg.write_text(json.dumps(_minimal_config(**overrides), indent=2), encoding="utf-8")
     return cfg
 
@@ -224,7 +224,7 @@ def test_end_to_end_claude_code(
 def test_validation_rejects_missing_corp_name(tmp_path: Path, generate: Any) -> None:
     cfg_data = _minimal_config()
     cfg_data.pop("CORP_NAME")
-    cfg = tmp_path / "dog.json"
+    cfg = tmp_path / "config.json"
     cfg.write_text(json.dumps(cfg_data), encoding="utf-8")
 
     rc = generate.main(["--config", str(cfg), "--out", str(tmp_path / "out")])
@@ -360,7 +360,7 @@ def test_public_git_refuses_internal_hostname(
 ) -> None:
     cfg = _write_config(
         tmp_path,
-        CC_PRIMARY_URL="https://socle.ia.acme.internal",
+        CC_PRIMARY_URL="https://gateway.acme.internal",
         DIST_MODE="public-git",
         DIST_REPO_URL="https://github.com/acme/copilot",
         DIST_REPO_VISIBILITY="public",
@@ -380,7 +380,7 @@ def test_public_git_force_override(
     """DIST_PUBLIC_FORCE=yes bypasses the .internal guard (escape hatch)."""
     cfg = _write_config(
         tmp_path,
-        CC_PRIMARY_URL="https://socle.ia.acme.internal",
+        CC_PRIMARY_URL="https://gateway.acme.internal",
         DIST_MODE="public-git",
         DIST_REPO_URL="https://github.com/acme/copilot",
         DIST_REPO_VISIBILITY="public",

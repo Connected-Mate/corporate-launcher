@@ -2,7 +2,9 @@
 
 # Corporate Launcher
 
-**A Claude Code skill that builds a secure, branded corporate launcher around Claude Code, Codex CLI, or Gemini CLI — and helps you ship it to your team.**
+**An AI-coding-host skill that builds a secure, branded corporate launcher around Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline — and helps you ship it to your team.**
+
+*Install it once into your favorite host (Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline) — it works the same way from any of them.*
 
 [Why](#why) · [What it does](#what-it-does) · [Install](#install) · [How it works](#how-it-works) · [Skills bundle](#skills-bundle) · [Distribution](#distribution) · [Examples](#examples) · [FAQ](#faq) · [A word from the creator](#a-word-from-the-creator)
 
@@ -68,22 +70,27 @@ Nothing is irreversible. The uninstaller restores every file and the shell RC fr
 
 ## Install
 
-The skill lives in your Claude Code skills directory.
+The skill works from **4 AI coding hosts** — Claude Code, Codex CLI, Gemini CLI, and Cursor/Cline. Pick yours:
 
-```bash
-git clone https://github.com/Connected-Mate/corporate-launcher.git \
-    ~/.claude/skills/corporate-launcher
-```
+| Host | One-liner |
+|---|---|
+| Claude Code | `git clone https://github.com/Connected-Mate/corporate-launcher.git ~/.claude/skills/corporate-launcher` |
+| Codex CLI | `git clone https://github.com/Connected-Mate/corporate-launcher.git ~/.agents/skills/corporate-launcher` |
+| Gemini CLI | `gemini extensions install https://github.com/Connected-Mate/corporate-launcher --path integrations/gemini` |
+| Cursor | `cp -R integrations/cursor/.cursor ./` (from a cloned repo) |
+| Cline (VS Code) | `cp -R integrations/cline/.clinerules ./` (from a cloned repo) |
 
-Then in any Claude Code session:
+Full host-by-host instructions, the universal symlink one-liner, and verification commands live in **[INSTALL.md](INSTALL.md)**.
+
+Once installed, invoke the skill from any host:
 
 ```
 > /corporate-launcher
 ```
 
-Or just ask in natural language — the skill description triggers on phrases like *"wrap claude for my company"*, *"my employer doesn't allow Claude Code"*, *"build me an internal launcher for Codex on Azure"*, *"I need a white-label CLI for my team"*.
+Or ask in natural language — the skill description triggers on phrases like *"wrap claude for my company"*, *"white-label cursor for my team"*, *"my employer doesn't allow Codex"*, *"build me an internal launcher for Gemini on Vertex"*, *"I need a white-label CLI"*.
 
-> **Requirements**: Claude Code, Python 3.10+, Node.js 18+. The wrapped CLI gets installed by the generated `install.sh` if it's not present.
+> **Requirements**: one of the 4 hosts, Python 3.10+, Node.js 18+. The wrapped CLI gets installed by the generated `install.sh` if it's not present.
 
 ---
 
@@ -232,7 +239,7 @@ Hi — I'm **[Alexandre Cormeraie](https://www.linkedin.com/in/alex-cormeraie/)*
 
 I built this skill because I needed it at work. My employer wouldn't authorize the public AI coding CLIs as-is, so I built an internal launcher for my team — gated VPN, corporate gateway, white-label identity, telemetry off, the works. It ran in production for a while, and after a few months I realized the pattern is generic. Every large org has the same gateway, the same cyber rules, the same need to re-brand. The work is mostly the same; only the names change.
 
-So instead of keeping it closed, I extracted the pattern into a Claude Code skill — open, free, and tenant-agnostic. You answer a handful of questions, the skill generates your launcher, you decide which skills to bundle for your team, and you ship it however you ship internal tools.
+So instead of keeping it closed, I extracted the pattern into a portable skill — open, free, tenant-agnostic, and host-agnostic (Claude Code, Codex CLI, Gemini CLI, Cursor, Cline). You answer a handful of questions, the skill generates your launcher, you decide which skills to bundle for your team, and you ship it however you ship internal tools.
 
 If you adopt it, ship something with it, or hit a sharp edge, please open an issue — the more case studies the skill sees, the better the interview gets.
 

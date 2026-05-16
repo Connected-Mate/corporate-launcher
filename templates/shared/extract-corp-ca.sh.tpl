@@ -96,7 +96,7 @@ extract_corp_ca() {
                 >> "$raw" 2>/dev/null || true
             # tpl: User keychain may carry MDM-pushed corp CAs
             security find-certificate -a -p \
-                "${HOME}/Library/Keychains/login.keychain-db" \
+                "$\{HOME\}/Library/Keychains/login.keychain-db" \
                 >> "$raw" 2>/dev/null || true
             ;;
         Linux)

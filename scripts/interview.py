@@ -5,20 +5,18 @@ Parses `reference/interview-flow.md` to discover every variable, then walks
 the user through each section interactively (or reads answers from a file
 for CI / non-interactive runs).
 
-The output is a JSON context file (default: `dog.json`) consumable by
+The output is a JSON context file (default: `config.json`) consumable by
 `generate.py` / `scripts/render.py`.
 
 Usage:
-    python3 interview.py                        # interactive, writes ./dog.json
+    python3 interview.py                        # interactive, writes ./config.json
     python3 interview.py --config out.json      # interactive, custom output
     python3 interview.py --non-interactive \
-        --answers answers.json --config dog.json
+        --answers answers.json --config config.json
     python3 interview.py --flow path/to/flow.md # custom flow doc
 
 Anti-pattern avoided: questions are NOT hardcoded. If
 `reference/interview-flow.md` changes, this script adapts.
-
-Powered by TGV Europe.
 """
 
 from __future__ import annotations
@@ -38,7 +36,7 @@ from urllib.parse import urlparse
 # ---------------------------------------------------------------------------
 
 DEFAULT_FLOW = Path(__file__).resolve().parent.parent / "reference" / "interview-flow.md"
-DEFAULT_OUT = Path("dog.json")
+DEFAULT_OUT = Path("config.json")
 
 SLUG_RE = re.compile(r"^[a-z][a-z0-9-]{1,30}$")
 SENSITIVE_HINTS = ("token", "auth", "api_key", "secret", "password", "key_id", "bearer")
@@ -691,7 +689,7 @@ def run_non_interactive(sections: list[Section], answers: dict[str, Any]) -> dic
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--config", type=Path, default=DEFAULT_OUT, help="Output JSON config (default: dog.json)")
+    p.add_argument("--config", type=Path, default=DEFAULT_OUT, help="Output JSON config (default: config.json)")
     p.add_argument("--flow", type=Path, default=DEFAULT_FLOW, help="Path to interview-flow.md")
     p.add_argument("--non-interactive", action="store_true", help="Read answers from --answers file")
     p.add_argument("--answers", type=Path, help="Answer file (JSON or key=value) for non-interactive mode")

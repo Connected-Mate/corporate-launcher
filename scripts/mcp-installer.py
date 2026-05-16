@@ -31,12 +31,27 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
 
+# Set via --settings on the CLI; honoured by dispatch_via_module for
+# claude-code. Avoids touching ~/.claude/settings.json by default.
+_MCP_SETTINGS_OVERRIDE: Path | None = None
+
 SUPPORTED_CLIS = ("claude-code", "codex-cli", "gemini-cli", "aider", "opencode")
+# Map the public CLI name (used on the --cli flag and in DOG configs) to the
+# short module suffix used by the sibling injector files. The names diverge
+# because injectors are vendor-grouped (claude-code → mcp-injector-claude.py).
+CLI_INJECTOR_MAP = {
+    "claude-code": "claude",
+    "codex-cli":   "codex",
+    "gemini-cli":  "gemini",
+    "aider":       "aider",
+    "opencode":    "opencode",
+}
 REQUIRED_FIELDS = ("name", "url")
 HERE = Path(__file__).resolve().parent
 AIDER_NOTE = HERE.parent / "reference" / "mcp-aider-note.md"
@@ -63,10 +78,11 @@ def validate_servers(raw: object) -> list[dict]:
 
 def load_injector(cli: str) -> ModuleType | None:
     """Import the sibling ``mcp-injector-<cli>.py`` module, or return None."""
-    path = HERE / f"mcp-injector-{cli}.py"
+    suffix = CLI_INJECTOR_MAP.get(cli, cli)
+    path = HERE / f"mcp-injector-{suffix}.py"
     if not path.is_file():
         return None
-    spec = importlib.util.spec_from_file_location(f"mcp_injector_{cli.replace('-', '_')}", path)
+    spec = importlib.util.spec_from_file_location(f"mcp_injector_{suffix.replace('-', '_')}", path)
     if spec is None or spec.loader is None:
         return None
     module = importlib.util.module_from_spec(spec)
@@ -89,24 +105,51 @@ def print_aider_warning() -> None:
 
 
 def dispatch_via_module(module: ModuleType, servers: list[dict], cli: str) -> int:
-    """Call ``module.install(servers)`` and return its int exit code."""
-    if not hasattr(module, "install"):
-        print(
-            f"ERROR: injector for {cli!r} has no install(servers) entry point",
-            file=sys.stderr,
-        )
-        return 4
-    try:
-        result = module.install(servers)
-    except Exception as e:  # noqa: BLE001 — surface any injector failure
-        print(f"ERROR: injector for {cli!r} raised: {e}", file=sys.stderr)
-        return 5
-    return int(result) if result is not None else 0
+    """Call ``module.install(servers)`` and return its int exit code.
+
+    If the injector exposes no ``install`` entry point but does expose
+    ``main(argv)``, fall back to invoking it the way a subprocess would —
+    this matches the CLI shape used by the per-CLI scripts.
+    """
+    if hasattr(module, "install"):
+        try:
+            result = module.install(servers)
+        except Exception as e:  # noqa: BLE001 — surface any injector failure
+            print(f"ERROR: injector for {cli!r} raised: {e}", file=sys.stderr)
+            return 5
+        return int(result) if result is not None else 0
+    if hasattr(module, "main"):
+        # In-process equivalent of the subprocess fallback. Each injector
+        # accepts at least --servers; for claude-code we also need --settings.
+        argv: list[str] = ["--servers", json.dumps(servers)]
+        if cli == "claude-code":
+            # Prefer an explicit --settings override (set by the orchestrator);
+            # otherwise write inside the launcher install dir, never the
+            # operator's personal ~/.claude/settings.json.
+            settings = _MCP_SETTINGS_OVERRIDE or (
+                Path(os.environ.get("CORP_LAUNCHER_INSTALL_DIR", "."))
+                / "settings.json"
+            )
+            argv.extend(["--settings", str(settings)])
+        try:
+            result = module.main(argv)
+        except SystemExit as e:
+            return int(e.code or 0)
+        except Exception as e:  # noqa: BLE001
+            print(f"ERROR: injector for {cli!r} raised: {e}", file=sys.stderr)
+            return 5
+        return int(result) if result is not None else 0
+    print(
+        f"ERROR: injector for {cli!r} has no install(servers) entry point",
+        file=sys.stderr,
+    )
+    return 4
 
 
 def dispatch_via_subprocess(cli: str, servers: list[dict]) -> int:
     """Fallback: invoke ``mcp-injector-<cli>.py`` as a subprocess."""
-    path = HERE / f"mcp-injector-{cli}.py"
+    suffix = CLI_INJECTOR_MAP.get(cli, cli)
+    path = HERE / f"mcp-injector-{suffix}.py"
     if not path.is_file():
         print(
             f"ERROR: no MCP injector found for {cli!r} (expected {path})",
@@ -142,7 +185,17 @@ def main(argv: list[str] | None = None) -> int:
         default="import",
         help="How to invoke the per-CLI injector (default: import)",
     )
+    p.add_argument(
+        "--settings",
+        type=Path,
+        default=None,
+        help="Path to the CLI settings file to write (claude-code only). "
+             "If omitted, defaults to <install_dir>/settings.json — never "
+             "to ~/.claude/settings.json.",
+    )
     args = p.parse_args(argv)
+    global _MCP_SETTINGS_OVERRIDE
+    _MCP_SETTINGS_OVERRIDE = args.settings.expanduser().resolve() if args.settings else None
 
     try:
         servers = validate_servers(json.loads(args.servers))

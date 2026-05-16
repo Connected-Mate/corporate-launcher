@@ -1,0 +1,33 @@
+---
+description: Generates a secure, branded, organization-specific launcher that wraps Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline onto a corporate AI gateway. Trigger phrases — wrap claude code, wrap codex, wrap gemini, wrap cursor, wrap cline, white label, internal AI CLI, bedrock gateway, azure openai cli, vertex cli, ship to my team, internal copilot.
+alwaysApply: false
+---
+
+# Corporate Launcher (Cursor rule)
+
+When the user asks for any of the following, run the `/corporate-launcher` command (defined in `.cursor/commands/corporate-launcher.md`):
+
+- a wrapper that hides Claude / Codex / Gemini / Cursor / Cline and re-brands it (e.g. `acmecorp-ai`, `bnp-copilot`)
+- their CLI routed only through their corporate gateway (LiteLLM, Azure OpenAI, Vertex, Bedrock)
+- corporate proxy + SSL inspection + custom CA + VPN gate
+- telemetry off, only first-party models from the chosen provider
+- a turnkey install for their team (one script, one config, one launcher)
+- a curated set of skills (design pack, internal review skill, MCP servers) shipped inside the launcher
+
+Do **not** trigger for a personal/hobby setup, a one-off API call, or generic shell scripting.
+
+## Hard rules (always-on)
+
+- Never generate a launcher that calls the vendor's public API directly. The corporate gateway is the only allowed egress.
+- Never store the API key in plaintext or a world-readable file. Always chmod 600, prefer the OS keychain.
+- Never disable SSL verification globally. Use process-scoped env vars only.
+- Never modify `/etc/hosts`, the system trust store, or any global config.
+- Never enable auto-update inside the corporate launcher.
+- Never ship `curl ... | bash` without a checksum or signature step.
+
+## Reference
+
+- Cursor rules spec: https://cursor.com/docs/rules
+- Cursor commands spec: https://cursor.com/docs/context/commands
+- Project path: `.cursor/rules/` + `.cursor/commands/`
+- Global path: `~/.cursor/rules/` + `~/.cursor/commands/`

@@ -1,0 +1,35 @@
+description = "Generate a secure, branded corporate launcher around Claude Code, Codex, Gemini, Cursor, or Cline."
+
+prompt = """
+You are running the **corporate-launcher** skill inside Gemini CLI.
+
+Goal: Build a secure, branded, organization-specific launcher around an AI coding CLI (Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline) so the user can:
+
+1. Run it on their own corporate machine without breaching cyber/legal policy.
+2. Ship it to their team — same gateway, same cyber rules, curated bundled skills, on day one.
+
+Follow the canonical workflow from the repo `SKILL.md`:
+
+Phase 0 — Confirm intent (which CLI + which backend). Skip if obvious.
+Phase 1 — Run the config interview from `reference/interview-flow.md`. Walk every section:
+  1. Identity (brand name, sponsor, license)
+  2. Provider (which CLI(s) to wrap)
+  3. Backend (gateway URL, auth, region, models, fallback)
+  4. Network (VPN gate, proxy, custom CA, no_proxy)
+  5. Cyber (telemetry kill switches, cost tracking, prompt filter)
+  6. Branding (system prompt overrides, banner, terminal title)
+  7. Skills bundle (which skills + MCP servers to include)
+  8. Distribution (public/private repo, tarball, one-liner)
+Phase 2 — Validate, show one-screen recap, ask "Generate? [y/N]". Do not generate without explicit y.
+Phase 3 — Render templates via `scripts/render.py` into the install path.
+Phase 4 — Generate the distribution kit (repo / tarball / one-liner).
+Phase 5 — Print exact run command, install path, uninstall command, distribution artifact, follow-up checklist.
+
+Anti-patterns: never call the vendor's public API directly, never store API key in plaintext, never disable SSL globally, never modify /etc/hosts, never ship `curl ... | bash` without checksum.
+
+The user's request is:
+
+{{args}}
+
+Begin Phase 0 now.
+"""
