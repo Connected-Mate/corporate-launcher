@@ -104,7 +104,7 @@ Once installed, invoke the skill from any host:
 
 Or ask in natural language — the skill description triggers on phrases like *"wrap claude for my company"*, *"white-label cursor for my team"*, *"my employer doesn't allow Codex"*, *"build me an internal launcher for Gemini on Vertex"*, *"I need a white-label CLI"*.
 
-> **Requirements**: one of the 4 hosts, Python 3.10+, Node.js 18+. The wrapped CLI gets installed by the generated `install.sh` if it's not present.
+> **Requirements**: one of the 5 hosts (Claude Code, Codex CLI, Gemini CLI, Cursor, Cline), Python 3.10+, Node.js 18+. The wrapped CLI gets installed by the generated `install.sh` if it's not present.
 
 ---
 
@@ -181,7 +181,7 @@ You can also pre-configure MCP servers the same way: the launcher's `settings.js
 Two helpers make the skills bundle self-service:
 
 - [`scripts/host-deploy.sh`](scripts/host-deploy.sh) — auto-detect every installed AI coding host (Claude Code, Codex CLI, Gemini CLI, Cursor, Cline) and deploy the launcher's bundled skills into each one with `--all` / `--dry-run` / `--host NAME` flags.
-- [`scripts/check-skill-quality.py`](scripts/check-skill-quality.py) — programmatic audit of any `SKILL.md` against the [Audit Rulebook](tests/AUDIT_RULEBOOK.md) (frontmatter, description budget, body size, anti-pattern rationale, forbidden brand terms, sync drift). Run it before shipping a custom skill to your team.
+- [`scripts/check-skill-quality.py`](scripts/check-skill-quality.py) — programmatic audit of any `SKILL.md` against the [Audit Rulebook](tests/reports/AUDIT_RULEBOOK.md) (frontmatter, description budget, body size, anti-pattern rationale, forbidden brand terms, sync drift). Run it before shipping a custom skill to your team.
 
 See [`references/skills-bundle.md`](references/skills-bundle.md) for the full options.
 
