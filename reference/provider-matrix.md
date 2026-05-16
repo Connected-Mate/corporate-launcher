@@ -1,6 +1,6 @@
 # Provider × Backend Matrix
 
-How each AI coding CLI can be wrapped onto a corporate gateway. Use this to validate the user's DOG answers in Phase 1.
+How each AI coding CLI can be wrapped onto a corporate gateway. Use this to validate the interview answers in Phase 1.
 
 ## Tier S — wrap trivial, fully ENV-driven
 

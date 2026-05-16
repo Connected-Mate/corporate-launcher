@@ -1,4 +1,4 @@
-# Interview Flow — The DOG questionnaire
+# Interview Flow
 
 Walk the user through every section in order. Use `AskUserQuestion` for each step. Skip a section only if a previous answer made it irrelevant (e.g. no proxy → skip CA bundle).
 
@@ -10,14 +10,12 @@ Save the answers under uppercase snake_case keys (`CORP_NAME`, `LLM_PRIMARY_URL`
 
 | Var | Question | Type | Default |
 |---|---|---|---|
-| `CORP_NAME` | What's the brand name of your launcher? (e.g. `Patrick Code`, `Acme AI`) | string | required |
+| `CORP_NAME` | What's the brand name of your launcher? (e.g. `Acme Copilot`, `Globex Helper`) | string | required |
 | `CORP_SLUG` | Short slug for the binary (lowercase, hyphens) | string | derived from `CORP_NAME` |
-| `CORP_POWERED_BY` | Who's the internal sponsor / "powered by"? (e.g. `TGV Europe`, `Group AI Lab`) | string | required |
+| `CORP_POWERED_BY` | Who's the internal sponsor / "powered by"? (e.g. `Acme AI Lab`, `Group AI Platform`) | string | required |
 | `CORP_ORGANIZATION` | Legal entity / group name | string | required |
 | `CORP_TAGLINE` | One-line tagline shown in the banner | string | `Internal AI assistant` |
 | `CORP_LICENSE_NOTE` | Internal compliance / license line | string | `Internal use only` |
-
-If the user is at SNCF, suggest the SNCF example. If at another bank/insurance/telco, default to generic.
 
 ---
 
@@ -115,7 +113,7 @@ Common questions:
 | Var | Question | Type | Default |
 |---|---|---|---|
 | `CYBER_RULES_FILE` | Path to your corporate cyber rules markdown (or use default 15-control baseline) | path | `shared/cyber-rules.md` |
-| `CYBER_AUTHORITY` | Name of the corporate cyber authority (e.g. `Direction Cybersécurité Acme`) | string | required |
+| `CYBER_AUTHORITY` | Name of the corporate cyber authority (e.g. `ACME Group CISO`, `Globex Security Office`) | string | required |
 | `BLOCK_TELEMETRY` | Disable all telemetry to the CLI vendor? | yes/no | yes |
 | `BLOCK_AUTO_UPDATE` | Lock the CLI version (no auto-update)? | yes/no | yes |
 | `BLOCK_FEEDBACK_CMDS` | Hide `/bug`, `/feedback` commands? | yes/no | yes |
@@ -138,16 +136,80 @@ Common questions:
 
 ---
 
-## Section 7 — Distribution
+## Section 7 — Install layout (creator's machine)
 
 | Var | Question | Type | Default |
 |---|---|---|---|
 | `INSTALL_DIR` | Where to install the launcher tree on the user's machine | path | `~/.local/share/${CORP_SLUG}` |
 | `BIN_PATH` | Where to symlink the binary | path | `~/.local/bin` |
 | `SHELL_RC` | Auto-detect (zsh/bash/fish/PowerShell) | enum | auto |
-| `REPO_HOST` | (Optional) GitHub/GitLab repo to publish the launcher source | url | empty |
 | `LICENSE_TYPE` | Internal-only / Proprietary / MIT / Apache-2.0 | enum | `Internal-only` |
 | `INCLUDE_UNINSTALL` | Generate `uninstall.sh` and uninstall manifest? | yes/no | yes |
+
+---
+
+## Section 8 — Skills bundle (what colleagues get inside the launcher)
+
+See `reference/skills-bundle.md` for the full details. Ask:
+
+```
+Which skills do you want to bundle for your colleagues?
+
+  [1] None — bare wrapper only
+  [2] Design pack (curated UI/UX skills)
+  [3] Pick from a curated list (one-by-one, multi-select)
+  [4] From a git repo URL — your own internal skill monorepo
+  [5] From a local folder — what's already on this machine
+```
+
+| Var | Type | Notes |
+|---|---|---|
+| `SKILLS_MODE` | enum | `none` / `preset` / `pick` / `git` / `local` / `combined` |
+| `SKILLS_PRESETS` | list | e.g. `["design-pack"]` |
+| `SKILLS_PICK` | list | e.g. `["polish","audit","critique"]` |
+| `SKILLS_GIT_URL` | URL | private/public git URL |
+| `SKILLS_GIT_REF` | string | branch / tag / commit, defaults to `main` |
+| `SKILLS_LOCAL_PATH` | path | absolute path on creator's machine |
+
+Then ask about MCP servers:
+
+```
+Pre-configure MCP servers in the launcher?
+
+  [1] No — colleagues add their own
+  [2] Yes — let me list them (name + URL + headers)
+```
+
+| Var | Type | Example |
+|---|---|---|
+| `MCP_SERVERS` | list | `[{"name":"jira","url":"https://mcp.acme/jira","headers":{"Authorization":"Bearer ${env:MCP_TOKEN}"}}]` |
+
+---
+
+## Section 9 — Distribution (how to ship it to the team)
+
+See `reference/distribution-modes.md` for trade-offs. Ask:
+
+```
+How do you want to ship this to your team?
+
+  [1] Public GitHub repo
+  [2] Private GitHub / GitLab repo
+  [3] Tarball + internal artifact registry
+  [4] One-liner install URL (host install.sh on your intranet)
+  [5] No distribution — local only for now
+```
+
+| Var | Type | Example |
+|---|---|---|
+| `DIST_MODE` | enum | `public-git` / `private-git` / `tarball` / `oneliner` / `none` |
+| `DIST_REPO_HOST` | enum | `github` / `gitlab` / `bitbucket` / `internal-gitea` |
+| `DIST_REPO_URL` | URL | URL of the repo to create |
+| `DIST_REPO_VISIBILITY` | enum | `public` / `internal` / `private` |
+| `DIST_REGISTRY_URL` | URL | Nexus / Artifactory base URL (tarball mode) |
+| `DIST_ONELINER_HOST` | URL | where install.sh will be hosted |
+| `DIST_SIGN_RELEASE` | bool | sign the tarball / install.sh with GPG? |
+| `DIST_GPG_KEY_ID` | string | GPG key id (if signing) |
 
 ---
 
@@ -161,6 +223,9 @@ Before generating, the skill must check:
 4. `PROXY_HOST` is empty XOR `PROXY_PORT` is set (no half-config).
 5. If `BLOCK_TELEMETRY=yes`, the generated launcher must export ALL the kill switches listed in `reference/env-vars.md` (no partial opt-out).
 6. If `CC_BACKEND=Bedrock` or `=LiteLLM`, force `CC_NEEDS_STRIP_PROXY=yes`.
+7. If `DIST_MODE=public-git`, refuse if `CC_PRIMARY_URL` contains an internal hostname (`.internal`, `.local`, RFC1918) unless the creator overrides with `DIST_PUBLIC_FORCE=yes`.
+8. If `DIST_MODE=oneliner`, refuse if `DIST_ONELINER_HOST` is plain HTTP (force HTTPS).
+9. If `SKILLS_MODE=git` and the URL is publicly mirrored, prompt: "is this repo reviewed by your security team?" before continuing.
 
 If a check fails, loop back to the relevant `AskUserQuestion`.
 
@@ -199,6 +264,11 @@ Show a one-screen summary:
   Bin path     : ${BIN_PATH}
   Uninstall    : ${INCLUDE_UNINSTALL}
 
+  Skills       : ${SKILLS_MODE}  (${SKILLS_PRESETS} / ${SKILLS_GIT_URL})
+  MCP servers  : ${MCP_SERVERS | length} pre-configured
+  Distribution : ${DIST_MODE}  (${DIST_REPO_URL || DIST_ONELINER_HOST || "local"})
+  Signing      : ${DIST_SIGN_RELEASE}
+
 ----------------------------------------------------
   Files that will be written:
     - ${INSTALL_DIR}/${CORP_SLUG}            (launcher binary)
@@ -208,8 +278,15 @@ Show a one-screen summary:
     - ${INSTALL_DIR}/cyber-rules.md
     - ${INSTALL_DIR}/scripts/*.sh, *.py, *.js
     - ${INSTALL_DIR}/settings.json
-    - ~/.${CORP_SLUG}.conf  (API key, chmod 600)
+    - ${INSTALL_DIR}/skills/        (bundled skills for colleagues)
+    - ~/.${CORP_SLUG}.conf          (chmod 600 fallback)
     - shell RC block in ${SHELL_RC}
+
+  Distribution artifacts:
+    - dist/repo/                    (if DIST_MODE = *-git)
+    - dist/${CORP_SLUG}-1.0.0.tar.gz  (if DIST_MODE = tarball)
+    - dist/install.sh                  (if DIST_MODE = oneliner)
+    - dist/SHA256SUMS                  (always for tarball/oneliner)
 
 ----------------------------------------------------
   Generate? [y/N]

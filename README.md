@@ -2,11 +2,9 @@
 
 # Corporate Launcher
 
-**Build a secure, branded, organization-specific launcher around any AI coding CLI — in minutes.**
+**A Claude Code skill that builds a secure, branded corporate launcher around Claude Code, Codex CLI, or Gemini CLI — and helps you ship it to your team.**
 
-*A Claude Code skill that turns a 10-question interview into a turnkey corporate wrapper.*
-
-[Why](#why) · [What it does](#what-it-does) · [Install](#install) · [How it works](#how-it-works) · [Supported CLIs](#supported-clis) · [Examples](#examples) · [FAQ](#faq) · [Origin](#origin-patrick-code-sncf)
+[Why](#why) · [What it does](#what-it-does) · [Install](#install) · [How it works](#how-it-works) · [Skills bundle](#skills-bundle) · [Distribution](#distribution) · [Examples](#examples) · [FAQ](#faq) · [A word from the creator](#a-word-from-the-creator)
 
 </div>
 
@@ -18,57 +16,63 @@ Most large organizations don't allow employees to install Claude Code, Codex CLI
 
 - The default endpoints leak prompts to the vendor's public infrastructure.
 - The CLI brand is wrong for an internal product.
-- Telemetry / auto-update / feedback commands violate the corporate cyber policy.
-- The corporate API gateway (Socle IA, LiteLLM, Azure OpenAI, Vertex, Bedrock, ...) needs proxy + custom CA + VPN gating that a `brew install` won't set up.
+- Telemetry, auto-update, and feedback commands violate the corporate cyber policy.
+- The corporate AI gateway (LiteLLM, Azure OpenAI, Vertex, Bedrock, ...) needs proxy + custom CA + VPN gating that a `brew install` won't set up.
 - The legal team wants a clear answer to "which models, on which infrastructure, billed to whom".
 
 So either employees go without — or someone builds a wrapper. Internally, the wrapper takes weeks to design, a quarter to harden, and rots the day the underlying CLI publishes a new env var.
 
-**Corporate Launcher is the wrapper, distilled.** It encodes years of production lessons from [Patrick Code](#origin-patrick-code-sncf) (SNCF's launcher around Claude Code) into a skill any team can run on their workstation.
+**Corporate Launcher is that wrapper, made repeatable.**
 
 ```
 You:  /corporate-launcher
-Skill: What's the brand name?
+Skill: What's the brand name of your launcher?
 You:  ACME Copilot
-Skill: Which CLI? [Claude Code / Codex / Gemini / Aider / opencode / Continue.dev]
+Skill: Which CLI do you want to wrap? [Claude Code / Codex CLI / Gemini CLI]
 You:  Claude Code
-Skill: Which gateway?
-You:  https://litellm.acme.internal
-...
-Skill: Generate the launcher? [y/N]
+Skill: Which gateway URL? Which models? Which proxy?
+You:  ...
+Skill: Which skills should ship inside it for your colleagues?
+You:  Design pack + our internal security-review skill
+Skill: How do you want to distribute it to your team?
+You:  Private GitHub repo + one-liner install URL
+Skill: Generate? [y/N]
 You:  y
-Skill: Done. Run: acme-copilot
+Skill: Done. Run "acme-copilot" yourself, and share this URL with your team:
+       https://acme.internal/install
 ```
 
 ---
 
 ## What it does
 
-In the **same shell session**, the skill:
+In one Claude Code session, the skill:
 
-1. Runs a structured interview — the "DOG" (Document d'Orientation Générale) — covering identity, provider, backend, network, cyber, branding, distribution.
-2. Validates the answers, defaults the unknowns, and shows you a one-screen plan.
-3. Generates a complete launcher tree on your machine:
-   - the wrapper binary (`acme-copilot`, `pcode`, ...)
-   - the install / uninstall scripts
+1. **Asks you the questions** — identity, provider, backend, network, cyber, branding, skills bundle, distribution.
+2. **Validates** the answers, defaults the unknowns, and shows you a one-screen plan.
+3. **Generates the launcher tree** on your machine:
+   - the wrapper binary (`acme-copilot`, your name, your slug)
+   - the install + uninstall scripts
    - the white-label system prompt (BRANDING.md)
-   - the 15-control cyber-rules markdown
-   - per-CLI settings file (`settings.json` / `config.toml` / `config.yaml`)
+   - the 15-control cyber rules
+   - the CLI's native config (`settings.json` / `config.toml` / `config.yaml`)
    - the shared modules: VPN check, proxy detection, secret storage, cost tracker, prompt filter, strip-proxy (when needed)
-4. Wires everything into the user's shell RC with an idempotent `# >>> name >>>` block.
-5. Stores the API token in the OS keychain (macOS Keychain / Windows Credential Manager / Linux libsecret), with a `chmod 600` file as fallback.
-6. Prints the exact command to launch + a working `--status` diagnostic.
+   - the **bundled skills** (design pack, custom skills, MCP servers) you chose for your team
+4. **Wires the shell** with an idempotent `# >>> name >>>` block.
+5. **Stores the token** in the OS keychain (macOS Keychain / Windows Credential Manager / Linux libsecret), with `chmod 600` fallback.
+6. **Generates the distribution kit** — git repo scaffold, install one-liner, or tarball — so you can hand the launcher to your team without re-running the skill yourself.
 
-Nothing it does is irreversible. The uninstall command removes every file, restores the shell RC from backup, stops the strip-proxy, deletes the keychain entry.
+Nothing is irreversible. The uninstaller restores every file and the shell RC from backup.
 
 ---
 
 ## Install
 
-The skill is meant to live in your Claude Code skills directory.
+The skill lives in your Claude Code skills directory.
 
 ```bash
-git clone https://github.com/Alex-Connected-Mate/corporate-launcher.git ~/.claude/skills/corporate-launcher
+git clone https://github.com/Connected-Mate/corporate-launcher.git \
+    ~/.claude/skills/corporate-launcher
 ```
 
 Then in any Claude Code session:
@@ -77,7 +81,7 @@ Then in any Claude Code session:
 > /corporate-launcher
 ```
 
-Or just ask in natural language — the skill description triggers on phrases like *"wrap claude for my company"*, *"my employer doesn't allow Claude Code"*, *"build me an internal launcher for Codex on Azure"*.
+Or just ask in natural language — the skill description triggers on phrases like *"wrap claude for my company"*, *"my employer doesn't allow Claude Code"*, *"build me an internal launcher for Codex on Azure"*, *"I need a white-label CLI for my team"*.
 
 > **Requirements**: Claude Code, Python 3.10+, Node.js 18+. The wrapped CLI gets installed by the generated `install.sh` if it's not present.
 
@@ -87,130 +91,159 @@ Or just ask in natural language — the skill description triggers on phrases li
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│  USER                                                                  │
-│   │                                                                    │
-│   ▼                                                                    │
-│  Claude Code  ──invokes──▶  corporate-launcher (SKILL.md)              │
-│                                  │                                     │
-│                                  ▼                                     │
-│                          interview-flow.md  ──questions──▶  USER       │
-│                                  │                                     │
-│                                  ▼                                     │
-│                          DOG answers (JSON)                            │
-│                                  │                                     │
-│                                  ▼                                     │
-│                          scripts/render.py   ──reads──▶  templates/    │
-│                                  │                                     │
-│                                  ▼                                     │
-│                          ~/.local/share/${CORP_SLUG}/                  │
-│                          + shell RC block                              │
-│                          + OS keychain entry                           │
-│                                  │                                     │
-│                                  ▼                                     │
-│                          $ ${CORP_SLUG}                                │
-│                          (launches the wrapped CLI)                    │
+│  YOU (creator) talk to Claude Code                                     │
+│       │                                                                │
+│       ▼                                                                │
+│  /corporate-launcher  (skill loaded)                                   │
+│       │                                                                │
+│       ▼                                                                │
+│  Structured interview → JSON config                                    │
+│       │                                                                │
+│       ▼                                                                │
+│  render.py walks templates/, substitutes ${VAR}                        │
+│       │                                                                │
+│       ▼                                                                │
+│  ~/.local/share/<your-slug>/                                           │
+│  ├── <your-slug>              ← the wrapper binary                     │
+│  ├── install.sh / uninstall.sh                                         │
+│  ├── BRANDING.md + cyber-rules.md                                      │
+│  ├── settings.json (CLI-native)                                        │
+│  ├── skills/                  ← bundled for your colleagues            │
+│  └── scripts/                 ← VPN/proxy/secrets/cost/filter          │
+│       │                                                                │
+│       ▼                                                                │
+│  Distribution kit (git repo, tarball, or one-liner URL)                │
+│       │                                                                │
+│       ▼                                                                │
+│  YOUR COLLEAGUES run the install one-liner — they get the same         │
+│  launcher, the same skills, the same cyber rules, on day one.          │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-The wrapper at runtime:
+At runtime the wrapper sources the shared modules, sets ~20 env vars, optionally starts a strip-proxy on `127.0.0.1:9876` (Bedrock/LiteLLM only), then `exec`s the underlying CLI with `--append-system-prompt-file BRANDING.md`. Nothing is globally installed. Every env var is scoped to the launcher process. The system trust store is never modified.
+
+---
+
+## Skills bundle
+
+When you build a launcher for your team, you choose which skills travel inside it. The skill asks you a single question:
 
 ```
-$ acme-copilot
-  ▶ source vpn-check.sh         ── probes internal-only URL, fails fast if off-VPN
-  ▶ source proxy-detect.sh      ── exports HTTP_PROXY only if reachable
-  ▶ source secrets-store.sh     ── loads API token from keychain
-  ▶ ensure_strip_proxy           ── starts middleware on 127.0.0.1:9876 (if Bedrock/LiteLLM)
-  ▶ export 20+ env vars         ── gateway URL, model, telemetry kill switches
-  ▶ exec claude --append-system-prompt-file BRANDING.md --append-system-prompt-file cyber-rules.md
+Which skills do you want to bundle for your colleagues?
+
+  [1] None — bare wrapper only
+  [2] Design pack (50+ UI/UX skills: layout, typography, color, animation, audit, polish, ...)
+  [3] Pick from a curated list (one-by-one)
+  [4] From a git repo URL — your own internal monorepo of skills
+  [5] From a local folder — what's already on this machine
 ```
 
-Nothing is globally installed. Every env var is scoped to the launcher process. The system trust store is never modified. `/etc/hosts` is never touched.
+Picking option 4 lets you maintain a private skill catalog inside your company. The generated `install.sh` clones (or pulls) that repo into `~/.claude/skills/` for every colleague who installs the launcher.
+
+You can also pre-configure MCP servers the same way: the launcher's `settings.json` ships with your team's MCP server list, so day-one developers get the right context (Jira, GitHub Enterprise, your internal docs).
+
+See [`reference/skills-bundle.md`](reference/skills-bundle.md) for the full options.
+
+---
+
+## Distribution
+
+Once your launcher is generated locally, the skill asks:
+
+```
+How do you want to ship this to your team?
+
+  [1] Public GitHub repo            — best for open evangelism
+  [2] Private GitHub / GitLab repo  — most common for internal use
+  [3] Tarball + internal artifact registry (Nexus, Artifactory)
+  [4] One-liner install URL          — host install.sh on your intranet
+  [5] No distribution — local only for now
+```
+
+For each option, the skill generates the matching artifacts:
+
+- **GitHub repo** → a clean tree, `.gitignore`, `LICENSE`, ready to `gh repo create --push`.
+- **Tarball** → `<slug>-<version>.tar.gz` with a `SHA256SUMS` file you can publish.
+- **One-liner** → a checked, signed `install.sh` and the exact `curl ... | bash` command to share. Includes a `--verify-checksum` step so users don't run an untrusted blob.
+
+The generated install one-liner is the same install script you ran locally — your colleagues land on the **same** launcher, with the **same** skills, the **same** cyber rules, and a fresh token prompted from the keychain.
+
+See [`reference/distribution-modes.md`](reference/distribution-modes.md) for the security caveats of each mode.
 
 ---
 
 ## Supported CLIs
 
-| CLI | Tier | Backends | Status |
-|---|---|---|---|
-| **Claude Code** | S | Anthropic, AWS Bedrock, Google Vertex, MS Foundry, LiteLLM | ✅ full templates + strip-proxy |
-| **Codex CLI** (OpenAI) | A | OpenAI, Azure OpenAI, AWS Bedrock | ✅ full templates + admin lockdown |
-| **Gemini CLI** (Google) | S | AI Studio, Vertex AI Enterprise | ✅ full templates + ADC auth |
-| **Aider** | S | OpenAI / Anthropic / Azure / Bedrock / Vertex via LiteLLM | ✅ full templates |
-| **opencode** | S | Same as Aider | ✅ full templates |
-| **Continue.dev** | A | Same as Aider | 🔧 config.yaml only |
-| Cursor | B | — | ❌ GUI-only, requires HTTPS-public gateway |
-| Windsurf | B | — | ❌ requires self-host infra |
-| Tabnine Enterprise | B | — | ❌ admin GUI server-side |
+| CLI | Tier | Backends |
+|---|---|---|
+| **Claude Code** | S | Anthropic, AWS Bedrock, Google Vertex, MS Foundry, LiteLLM |
+| **Codex CLI** (OpenAI) | A | OpenAI, Azure OpenAI, AWS Bedrock |
+| **Gemini CLI** (Google) | S | AI Studio, Vertex AI Enterprise |
+| **Aider** | S | OpenAI / Anthropic / Azure / Bedrock / Vertex via LiteLLM |
+| **opencode** | S | Same as Aider |
 
-Tier S = wrap trivial, full ENV-driven. Tier A = wrap moderate, requires a pre-deployed config. Tier B = out of scope for a shell launcher.
+Tier S = wrap trivial, full env-var driven. Tier A = wrap moderate, requires a pre-deployed config file. The first three are the recommended path — they're the most mature, the most documented, and the most likely to satisfy a corporate review.
 
 ---
 
 ## Examples
 
-Three filled-out examples ship under `reference/examples/`:
+Three filled-out examples ship under [`reference/examples/`](reference/examples/):
 
-- [`sncf-patrick-code.md`](reference/examples/sncf-patrick-code.md) — the reference: SNCF / Claude Code / LiteLLM-on-Bedrock with strip-proxy
+- [`acme-claude-litellm.md`](reference/examples/acme-claude-litellm.md) — Claude Code on a LiteLLM-on-Bedrock gateway with strip-proxy
 - [`acme-codex-azure.md`](reference/examples/acme-codex-azure.md) — Codex CLI on Azure OpenAI with admin lockdown
 - [`globex-gemini-vertex.md`](reference/examples/globex-gemini-vertex.md) — Gemini CLI on Vertex AI with EU data residency and ADC auth
 
-Each file contains the JSON DOG answers + a "why those choices" commentary. The fastest way to learn the skill is to read them.
+Each file contains the JSON config + a "why those choices" commentary. Reading them is the fastest way to learn the skill.
 
 ---
 
 ## FAQ
 
-**Q: Does this replace `claude` / `codex` / `gemini`?**
-A: No. The launcher *wraps* them. The underlying CLI is installed normally; the launcher just sets the right env vars before exec.
+**Does this replace `claude` / `codex` / `gemini`?**
+No. The launcher wraps them. The underlying CLI is installed normally; the launcher sets the right env vars before `exec`.
 
-**Q: Can a user bypass it?**
-A: A determined power-user can always `unset` env vars. The launcher is a usability and policy device, not a security perimeter. The actual perimeter is the corporate gateway (only known tokens accepted) and the cyber-guard hook (denies destructive commands even under `bypassPermissions`).
+**Can a user bypass it?**
+A determined power user can always `unset` env vars. The launcher is a usability and policy device, not a security perimeter. The actual perimeter is the corporate gateway (only known tokens accepted) and the cyber-guard hook (denies destructive commands even under `bypassPermissions`).
 
-**Q: What about MCP servers?**
-A: The generated `settings.json` ships with an empty `mcpServers` block. Add yours through the normal `claude mcp add` flow. For Codex CLI, MCP allowlist is managed by `requirements.toml`.
+**What about MCP servers?**
+The generated `settings.json` ships with an empty `mcpServers` block, or with the list you chose in the skills-bundle step. For Codex CLI, the MCP allowlist is managed by `requirements.toml`.
 
-**Q: Does it ship a strip-proxy by default?**
-A: Only for Claude Code on Bedrock or LiteLLM, where 4 known SSE artefacts would crash the CLI parser. For Anthropic-direct, Vertex, Foundry, and the other CLIs, the launcher talks to the gateway directly.
+**Does it ship a strip-proxy by default?**
+Only for Claude Code on Bedrock or LiteLLM, where 4 known SSE artefacts crash the CLI parser. For Anthropic-direct, Vertex, Foundry, and the other CLIs, the launcher talks to the gateway directly.
 
-**Q: What about Windows?**
-A: PowerShell templates ship alongside bash. Tested on Windows 11 + PowerShell 7+ and WSL2. Native cmd.exe is not supported.
+**What about Windows?**
+PowerShell templates are on the roadmap. Today: Windows via WSL2 is supported. Native cmd.exe is not.
 
-**Q: How do I update the underlying CLI?**
-A: The auto-updater is disabled by default. Re-run the launcher's `install.sh` (or `--update` flag) to pull a newer CLI version and re-validate compatibility.
+**How do I update the underlying CLI?**
+The auto-updater is disabled by default. Re-run the launcher's `install.sh --update` to pull a newer CLI version and re-validate compatibility.
 
-**Q: What about cost tracking?**
-A: A JSONL log of every request is written under `/tmp/${CORP_SLUG}-usage.jsonl`. Run `${CORP_SLUG} --cost session|today|history` to summarize in your chosen currency. Pricing tables live in `templates/shared/cost-tracker.py.tpl` — adjust to match your contracted rates.
+**How is cost tracked?**
+A JSONL log of every request is written under `/tmp/<slug>-usage.jsonl`. Run `<slug> --cost session|today|history` to summarize in your chosen currency. The pricing table lives in `templates/shared/cost-tracker.py.tpl` — adjust it to match your contracted rates.
+
+**Is my team locked into Claude Code as the host?**
+No. The launcher you ship is standalone — your colleagues don't need to install Claude Code to use it. Only **you**, the creator, need Claude Code to *build* the launcher.
 
 ---
 
-## Origin: Patrick Code (SNCF)
+## A word from the creator
 
-This skill is a generalization of [Patrick Code](https://github.com/sncf-connect-tech) — a production launcher built at SNCF, used daily by the engineering teams of Europe's largest passenger rail operator. Patrick Code wraps Claude Code on top of *Socle IA SNCF* (an internal LiteLLM-on-Bedrock gateway) and ships with:
+Hi — I'm **Alexandre Meret** ([ConnectedMate](https://github.com/Connected-Mate)).
 
-- white-label identity ("Patrick", named after the very first TGV train)
-- 15-control cyber baseline from Direction Cybersécurité SNCF
-- 23 design skills (Emil + Impeccable + Taste)
-- per-session cost tracking in EUR
-- a strip-proxy middleware that fixes the SSE artefacts emitted by LiteLLM-on-Bedrock
+I built this skill because I needed it at work. My employer wouldn't authorize the public AI coding CLIs as-is, so I built an internal launcher for my team — gated VPN, corporate gateway, white-label identity, telemetry off, the works. It ran in production for a while, and after a few months I realized the pattern is generic. Every large org has the same gateway, the same cyber rules, the same need to re-brand. The work is mostly the same; only the names change.
 
-Patrick Code shipped in production, passed RSSI / DSI / DPO review, and is in active use. The Corporate Launcher skill distills that work into a general-purpose generator so other teams don't have to start from zero.
+So instead of keeping it closed, I extracted the pattern into a Claude Code skill — open, free, and tenant-agnostic. You answer a handful of questions, the skill generates your launcher, you decide which skills to bundle for your team, and you ship it however you ship internal tools.
+
+If you adopt it, ship something with it, or hit a sharp edge, please open an issue — the more case studies the skill sees, the better the interview gets.
+
+— Alex
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Patrick Code remains the property of SNCF; only the abstracted patterns are reused here.
+MIT — see [LICENSE](LICENSE). Use it, fork it, ship your own.
 
 ## Contributing
 
-Issues, PRs, and new CLI templates welcome. If you ship a Corporate Launcher in your org, send a 1-paragraph case study — the more examples, the better the skill gets at the interview phase.
-
----
-
-<div align="center">
-
-**Built by [ConnectedMate](https://github.com/Alex-Connected-Mate).**
-
-Released after evangelizing Patrick Code: a corporate launcher pattern that should be a commodity, not a quarterly project.
-
-</div>
+Issues, PRs, and new CLI templates welcome. If you ship a Corporate Launcher in your org, send a 1-paragraph case study — every example sharpens the skill's interview phase.

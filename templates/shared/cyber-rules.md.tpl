@@ -1,6 +1,6 @@
 # ${CORP_NAME} — Corporate Cyber Rules
 
-Powered by ${CORP_POWERED_BY} — Authority: ${CYBER_AUTHORITY}
+Powered by ${CORP_POWERED_BY} — Reviewed by: ${CYBER_AUTHORITY}
 
 These rules are appended to every system prompt sent to the model. The model **must** comply with them regardless of the user's request.
 

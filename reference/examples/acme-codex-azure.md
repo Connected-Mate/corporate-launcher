@@ -2,7 +2,7 @@
 
 A fictional second example to show the Codex CLI branch and the Azure OpenAI backend.
 
-## DOG answers
+## Config answers
 
 ```json
 {

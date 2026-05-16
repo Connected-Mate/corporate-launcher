@@ -71,7 +71,7 @@ Three layers, by preference:
 3. **Python**: `REQUESTS_CA_BUNDLE` + `SSL_CERT_FILE` — same PEM.
 4. **Codex CLI (Rust)**: `CODEX_CA_CERTIFICATE=/path/to/corp.pem`.
 
-Never `NODE_TLS_REJECT_UNAUTHORIZED=0` unless the user explicitly accepted the risk in Section 4 of the DOG (`ACCEPT_TLS_INSPECTION=yes`).
+Never `NODE_TLS_REJECT_UNAUTHORIZED=0` unless the user explicitly accepted the risk in Section 4 of the interview (`ACCEPT_TLS_INSPECTION=yes`).
 
 ### Auto-extraction at install time
 

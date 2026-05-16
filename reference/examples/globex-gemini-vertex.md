@@ -2,7 +2,7 @@
 
 A fictional third example to show the Gemini CLI branch and the Vertex AI Enterprise backend with EU data residency.
 
-## DOG answers
+## Config answers
 
 ```json
 {
