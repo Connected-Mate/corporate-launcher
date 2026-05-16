@@ -286,10 +286,25 @@ if [ "${VPN_REQUIRED}" = "yes" ]; then
 else
     printf "    2. Launch:             ${C_GREEN}%s${C_RESET}\n" "${CORP_SLUG}"
 fi
+# tpl: --- Optional extras (CA bundle / skills / MCP) -----------------------
+if [ "${CA_DETECT_AUTO}" = "yes" ] && [ -f "$INSTALL_DIR/scripts/extract-corp-ca.sh" ]; then
+    # shellcheck source=/dev/null
+    source "$INSTALL_DIR/scripts/extract-corp-ca.sh" && extract_corp_ca || true
+fi
+if [ -f "$INSTALL_DIR/scripts/install-skills.sh" ]; then
+    # shellcheck source=/dev/null
+    source "$INSTALL_DIR/scripts/install-skills.sh" && install_skills || true
+fi
+if [ -f "$INSTALL_DIR/scripts/install-mcp.sh" ]; then
+    # shellcheck source=/dev/null
+    source "$INSTALL_DIR/scripts/install-mcp.sh" && install_mcp_servers || true
+fi
+
 printf "\n  ${C_BOLD}Commands:${C_RESET}\n"
 printf "    %s                  start interactive session\n" "${CORP_SLUG}"
 printf "    %s --status         show resolved env (no secret)\n" "${CORP_SLUG}"
 printf "    %s --set-key        rotate the API token\n" "${CORP_SLUG}"
+printf "    %s --update         pull a newer CLI + re-render config\n" "${CORP_SLUG}"
 printf "    %s --help           full help\n" "${CORP_SLUG}"
 printf "\n  ${C_BOLD}Uninstall:${C_RESET}\n"
 printf "    ${C_DIM}%s${C_RESET}\n\n" "$INSTALL_DIR/uninstall.sh"

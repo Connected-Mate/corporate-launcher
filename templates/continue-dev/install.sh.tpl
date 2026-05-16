@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # =====================================================================
-#  ${CORP_NAME} — Aider launcher installer
+#  ${CORP_NAME} — Continue.dev launcher installer
 #  Powered by ${CORP_POWERED_BY}
 #
-#  Idempotent. Re-runnable. Backs up the shell RC before modifying it.
-#  - Verifies Python 3.10+ and pipx
-#  - Installs aider via `pipx install aider-install && aider-install`
-#  - Writes a managed ~/.aider.conf.yml (marker-tagged)
+#  Idempotent. Re-runnable. Backs up files before modifying them.
+#  - Detects OS + shell RC (zsh / bash / fish)
+#  - Detects supported IDEs (VS Code: `code`, JetBrains: `idea`/`pycharm`/`webstorm`)
+#  - Optionally installs the Continue extension for VS Code
+#  - Renders a managed ~/.continue/config.yaml (handled by render.py)
+#  - Backs up any pre-existing ~/.continue/config.yaml
 #  - Wires an idempotent ${CORP_SLUG} function block into the shell RC
+#  - Stores the API token via the shared secrets-store.sh
 # =====================================================================
 
 set -euo pipefail
@@ -71,6 +74,26 @@ detect_shell_rc() {
     [ -f "$SHELL_RC" ] || { mkdir -p "$(dirname "$SHELL_RC")" && touch "$SHELL_RC"; }
 }
 
+# tpl: detect IDE binaries. Sets:
+# tpl:   HAS_VSCODE=yes|no, HAS_JETBRAINS=yes|no, JETBRAINS_BINS="idea pycharm ..."
+detect_ides() {
+    HAS_VSCODE="no"
+    HAS_JETBRAINS="no"
+    JETBRAINS_BINS=""
+
+    if command -v code >/dev/null 2>&1; then
+        HAS_VSCODE="yes"
+        VSCODE_VERSION="$(code --version 2>/dev/null | head -1 || echo unknown)"
+    fi
+
+    for bin in idea pycharm webstorm; do
+        if command -v "$bin" >/dev/null 2>&1; then
+            HAS_JETBRAINS="yes"
+            JETBRAINS_BINS="$\{JETBRAINS_BINS\}$\{JETBRAINS_BINS:+ \}$bin"
+        fi
+    done
+}
+
 show_banner() {
     printf '\n$\{ORANGE\}$\{BOLD\}'
     printf '  ╔═══════════════════════════════════════════════╗\n'
@@ -100,81 +123,64 @@ info "Shell RC   : $SHELL_RC"
 info "Install dir: $INSTALL_DIR"
 
 # tpl: ---------------------------------------------------------------------
-# tpl: Step 2 — Python 3.10+ and pipx
-# tpl: aider-install drops a self-contained venv so we don't pollute the
-# tpl: system Python. Requires Python 3.10+ on the host.
+# tpl: Step 2 — IDE detection
+# tpl: Continue.dev runs as an extension/plugin inside an IDE. We don't
+# tpl: hard-fail if no IDE is found — the user may install one later.
 # tpl: ---------------------------------------------------------------------
-step "[2/7] Check Python 3.10+"
-PYTHON_BIN=""
-for candidate in python3.13 python3.12 python3.11 python3.10 python3 python; do
-    if command -v "$candidate" >/dev/null 2>&1; then
-        ver=$("$candidate" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || echo "0.0")
-        major=$\{ver%%.*\}
-        minor=$\{ver##*.\}
-        if [ "$major" -ge 3 ] && [ "$minor" -ge 10 ]; then
-            PYTHON_BIN="$candidate"
-            info "python: $candidate ($ver)"
-            break
-        fi
-    fi
-done
-if [ -z "$PYTHON_BIN" ]; then
-    fail "Python 3.10+ is required. Install via your corporate package manager."
-    [ "$OS_TYPE" = "macos" ]  && fail "  macOS: brew install python@3.12"
-    [ "$OS_TYPE" = "linux" ]  && fail "  Debian/Ubuntu: apt install python3 python3-venv"
-    exit 1
+step "[2/7] Detect supported IDEs"
+detect_ides
+
+if [ "$HAS_VSCODE" = "yes" ]; then
+    info "VS Code    : $VSCODE_VERSION"
+else
+    warn "VS Code 'code' command not found in PATH."
 fi
 
-step "[3/7] Check pipx"
-if ! command -v pipx >/dev/null 2>&1; then
-    warn "pipx not found."
-    if [ "$OS_TYPE" = "macos" ] && command -v brew >/dev/null 2>&1; then
-        if ask "Install pipx via Homebrew?"; then
-            brew install pipx || { fail "brew install pipx failed"; exit 1; }
-            pipx ensurepath || true
-        else
-            fail "pipx is required to install aider."
-            exit 1
-        fi
+if [ "$HAS_JETBRAINS" = "yes" ]; then
+    info "JetBrains  : $JETBRAINS_BINS"
+else
+    warn "No JetBrains CLI launcher found (idea / pycharm / webstorm)."
+fi
+
+if [ "$HAS_VSCODE" = "no" ] && [ "$HAS_JETBRAINS" = "no" ]; then
+    warn "No supported IDE detected. Install VS Code or a JetBrains IDE,"
+    warn "then re-run '${CORP_SLUG} --install-extension' or this installer."
+    warn "Continuing anyway — extension install will be skipped."
+fi
+
+# tpl: ---------------------------------------------------------------------
+# tpl: Step 3 — Continue extension for VS Code
+# tpl: For JetBrains we only print instructions: the plugin must be
+# tpl: installed from JetBrains Marketplace inside the IDE (no CLI hook).
+# tpl: ---------------------------------------------------------------------
+step "[3/7] Install Continue extension"
+if [ "$HAS_VSCODE" = "yes" ]; then
+    if code --list-extensions 2>/dev/null | grep -qi '^Continue\.continue$'; then
+        info "Continue.continue already installed in VS Code"
     else
-        if ask "Install pipx via 'python3 -m pip install --user pipx'?"; then
-            "$PYTHON_BIN" -m pip install --user pipx || { fail "pip install pipx failed"; exit 1; }
-            "$PYTHON_BIN" -m pipx ensurepath || true
-            # tpl: make pipx visible in this shell for the next step
-            export PATH="$HOME/.local/bin:$PATH"
+        if ask "Install the Continue extension in VS Code now?"; then
+            if code --install-extension Continue.continue --force >/dev/null 2>&1; then
+                info "Installed Continue.continue"
+            else
+                warn "VS Code extension install failed — install manually from Marketplace"
+            fi
         else
-            fail "pipx is required to install aider."
-            exit 1
+            warn "Skipped — install later with: code --install-extension Continue.continue"
         fi
-    fi
-fi
-info "pipx: $(pipx --version 2>/dev/null || echo installed)"
-
-# tpl: ---------------------------------------------------------------------
-# tpl: Step 4 — aider (via aider-install for an isolated venv)
-# tpl: ---------------------------------------------------------------------
-step "[4/7] Install aider"
-if command -v aider >/dev/null 2>&1; then
-    info "aider already installed: $(aider --version 2>/dev/null || echo unknown)"
-    if ask "Upgrade aider to the latest version?"; then
-        pipx upgrade aider-install 2>/dev/null || pipx install --force aider-install
-        aider-install || true
     fi
 else
-    info "Installing aider-install via pipx..."
-    pipx install aider-install || { fail "pipx install aider-install failed"; exit 1; }
-    info "Running aider-install bootstrap..."
-    aider-install || { fail "aider-install failed"; exit 1; }
+    warn "VS Code not detected — skipping extension install."
 fi
 
-if ! command -v aider >/dev/null 2>&1; then
-    warn "aider not in PATH yet — open a new shell or 'source $SHELL_RC' after install."
+if [ "$HAS_JETBRAINS" = "yes" ]; then
+    warn "JetBrains plugin must be installed from the Marketplace:"
+    warn "  Settings → Plugins → search 'Continue' → Install"
 fi
 
 # tpl: ---------------------------------------------------------------------
-# tpl: Step 5 — permissions
+# tpl: Step 4 — Permissions
 # tpl: ---------------------------------------------------------------------
-step "[5/7] Set permissions"
+step "[4/7] Set permissions"
 chmod 755 "$INSTALL_DIR/${CORP_SLUG}"
 info "launcher executable: $INSTALL_DIR/${CORP_SLUG}"
 if [ -d "$INSTALL_DIR/scripts" ]; then
@@ -182,6 +188,36 @@ if [ -d "$INSTALL_DIR/scripts" ]; then
     info "shared modules: $INSTALL_DIR/scripts/"
 fi
 chmod 755 "$INSTALL_DIR/uninstall.sh" 2>/dev/null || true
+
+# tpl: ---------------------------------------------------------------------
+# tpl: Step 5 — managed ~/.continue/config.yaml
+# tpl: render.py has already rendered $INSTALL_DIR/config.yaml from the
+# tpl: template. Here we simply copy it into place, backing up any prior
+# tpl: user-edited file.
+# tpl: ---------------------------------------------------------------------
+step "[5/7] Install ~/.continue/config.yaml"
+
+CONTINUE_DIR="$HOME/.continue"
+CONTINUE_CONF_DEST="$CONTINUE_DIR/config.yaml"
+mkdir -p "$CONTINUE_DIR"
+chmod 700 "$CONTINUE_DIR"
+
+if [ -r "$INSTALL_DIR/config.yaml" ]; then
+    if [ -f "$CONTINUE_CONF_DEST" ]; then
+        if grep -qF "$GENERATED_MARKER" "$CONTINUE_CONF_DEST" 2>/dev/null; then
+            info "Refreshing managed $CONTINUE_CONF_DEST"
+        else
+            warn "Existing $CONTINUE_CONF_DEST was NOT generated by ${CORP_NAME}"
+            cp "$CONTINUE_CONF_DEST" "$\{CONTINUE_CONF_DEST\}.${CORP_SLUG}-backup"
+            warn "  backup: $\{CONTINUE_CONF_DEST\}.${CORP_SLUG}-backup"
+        fi
+    fi
+    install -m 0600 "$INSTALL_DIR/config.yaml" "$CONTINUE_CONF_DEST"
+    info "Wrote $CONTINUE_CONF_DEST"
+else
+    fail "missing $INSTALL_DIR/config.yaml — installer aborted"
+    exit 1
+fi
 
 # tpl: ---------------------------------------------------------------------
 # tpl: Step 6 — shell RC block (idempotent)
@@ -210,27 +246,9 @@ fi
 info "Shell block added"
 
 # tpl: ---------------------------------------------------------------------
-# tpl: Step 7 — managed ~/.aider.conf.yml + API token
+# tpl: Step 7 — API token (shared secrets-store.sh)
 # tpl: ---------------------------------------------------------------------
-step "[7/7] Configure aider + API token"
-
-AIDER_CONF_DEST="$HOME/.aider.conf.yml"
-if [ -r "$INSTALL_DIR/aider.conf.yml" ]; then
-    if [ -f "$AIDER_CONF_DEST" ]; then
-        if grep -qF "$GENERATED_MARKER" "$AIDER_CONF_DEST" 2>/dev/null; then
-            info "Refreshing managed ~/.aider.conf.yml"
-        else
-            warn "Existing ~/.aider.conf.yml was NOT generated by ${CORP_NAME}"
-            cp "$AIDER_CONF_DEST" "$\{AIDER_CONF_DEST\}.${CORP_SLUG}.bak"
-            warn "  backup: $\{AIDER_CONF_DEST\}.${CORP_SLUG}.bak"
-        fi
-    fi
-    install -m 0644 "$INSTALL_DIR/aider.conf.yml" "$AIDER_CONF_DEST"
-    info "Wrote $AIDER_CONF_DEST"
-else
-    fail "missing $INSTALL_DIR/aider.conf.yml — installer aborted"
-    exit 1
-fi
+step "[7/7] Configure API token"
 
 export CORP_NAME="${CORP_NAME}"
 export CORP_SLUG="${CORP_SLUG}"
@@ -250,6 +268,18 @@ else
 fi
 
 # tpl: ---------------------------------------------------------------------
+# tpl: Done — final instructions
+# tpl: ---------------------------------------------------------------------
+printf '\n$\{ORANGE\}$\{BOLD\}  Installation complete.$\{RESET\}\n\n'
+printf '  Reload your shell : $\{GREEN\}source %s$\{RESET\}\n' "$SHELL_RC"
+printf '  Config file       : $\{DIM\}%s$\{RESET\}\n' "$CONTINUE_CONF_DEST"
+if [ "$HAS_VSCODE" = "yes" ]; then
+    printf '  Launch VS Code    : $\{GREEN\}code .$\{RESET\}  then open the Continue side panel\n'
+    printf '  Chat shortcut     : $\{DIM\}Cmd/Ctrl+L$\{RESET\}  (or type $\{GREEN\}/continue$\{RESET\} in chat)\n'
+fi
+if [ "$HAS_JETBRAINS" = "yes" ]; then
+    printf '  JetBrains         : open IDE → Continue tool window → /continue\n'
+fi
 # tpl: --- Optional extras (CA bundle / skills / MCP) -----------------------
 if [ "${CA_DETECT_AUTO}" = "yes" ] && [ -f "$INSTALL_DIR/scripts/extract-corp-ca.sh" ]; then
     source "$INSTALL_DIR/scripts/extract-corp-ca.sh" && extract_corp_ca || true
@@ -261,11 +291,6 @@ if [ -f "$INSTALL_DIR/scripts/install-mcp.sh" ]; then
     source "$INSTALL_DIR/scripts/install-mcp.sh" && install_mcp_servers || true
 fi
 
-# tpl: Done
-# tpl: ---------------------------------------------------------------------
-printf '\n$\{ORANGE\}$\{BOLD\}  Installation complete.$\{RESET\}\n\n'
-printf '  Reload your shell : $\{GREEN\}source %s$\{RESET\}\n' "$SHELL_RC"
-printf '  Launch with       : $\{GREEN\}${CORP_SLUG}$\{RESET\}\n'
 printf '  Diagnostics       : $\{DIM\}${CORP_SLUG} --status$\{RESET\}\n'
 printf '  Update            : $\{DIM\}${CORP_SLUG} --update$\{RESET\}\n'
 printf '  Uninstall         : $\{DIM\}${CORP_SLUG} --uninstall$\{RESET\}\n\n'

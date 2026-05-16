@@ -1,0 +1,677 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/sncf/corporate-launcher/schema/config.schema.json",
+  "title": "Corporate Launcher Generated Config",
+  "description": "Validated input contract for scripts/generate.py. Every property here corresponds to an interview answer collected by scripts/interview.py and consumed by Jinja-style ${VAR} substitution in templates/**/*.tpl. Variables are documented in reference/interview-flow.md, reference/env-vars.md, reference/provider-matrix.md, reference/skills-bundle.md and reference/distribution-modes.md.",
+  "type": "object",
+  "additionalProperties": true,
+
+  "$defs": {
+    "yesNo": {
+      "type": "string",
+      "enum": ["yes", "no"],
+      "description": "Tri-state yes/no flag (string, not bool, for shell template compatibility)."
+    },
+    "httpsUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://[A-Za-z0-9._~:/?#@!$&'()*+,;=%-]+$",
+      "description": "HTTPS URL. Plain http is rejected so a corporate launcher cannot be wired to a clear-text endpoint."
+    },
+    "anyUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https?://[A-Za-z0-9._~:/?#@!$&'()*+,;=%-]+$"
+    },
+    "hostname": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$",
+      "description": "RFC 1123 hostname (no scheme, no path)."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Filesystem path. May contain ~ which the generator expands at install time."
+    },
+    "mcpServer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "url"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,30}$",
+          "description": "Short identifier exposed inside the CLI config (e.g. 'jira', 'github')."
+        },
+        "url": { "$ref": "#/$defs/httpsUrl" },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Optional HTTP headers. Values may reference env vars as ${env:VAR_NAME}."
+        },
+        "trust": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the CLI will not prompt the user before invoking tools from this server. Defaults to false (safe)."
+        }
+      }
+    }
+  },
+
+  "required": [
+    "CORP_NAME",
+    "CORP_SLUG",
+    "CORP_POWERED_BY",
+    "CORP_ORGANIZATION",
+    "WRAPPED_CLIS",
+    "CYBER_AUTHORITY",
+    "SKILLS_MODE",
+    "DIST_MODE"
+  ],
+
+  "properties": {
+
+    "$comment_section_1": {
+      "description": "Section 1 — Identity (reference/interview-flow.md §1)"
+    },
+    "CORP_NAME": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "description": "Brand name of the launcher shown in the banner.",
+      "examples": ["ACME Copilot", "Globex Helper"]
+    },
+    "CORP_SLUG": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{1,30}$",
+      "description": "Lowercase hyphenated slug used as the binary name, install dir, env-var prefix (rule from reference/interview-flow.md §Validation rule 1).",
+      "examples": ["acme-copilot", "globex-helper"]
+    },
+    "CORP_POWERED_BY": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Internal sponsor / 'powered by' line.",
+      "examples": ["ACME AI Platform", "Group AI Platform"]
+    },
+    "CORP_ORGANIZATION": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "description": "Legal entity / group name.",
+      "examples": ["ACME Industries"]
+    },
+    "CORP_TAGLINE": {
+      "type": "string",
+      "maxLength": 200,
+      "default": "Internal AI assistant"
+    },
+    "CORP_LICENSE_NOTE": {
+      "type": "string",
+      "default": "Internal use only",
+      "examples": ["Internal use only — ACME confidential"]
+    },
+
+    "$comment_section_2": {
+      "description": "Section 2 — Provider list (reference/interview-flow.md §2, reference/provider-matrix.md)"
+    },
+    "WRAPPED_CLIS": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["claude-code", "codex-cli", "gemini-cli", "aider", "opencode", "continue-dev"]
+      },
+      "description": "Which AI coding CLIs to wrap. Each value triggers the matching CC_*/CX_*/GM_*/LLM_* block requirement (see allOf rules)."
+    },
+
+    "$comment_section_3a": {
+      "description": "Section 3.A — Claude Code branch (interview-flow §3.A, provider-matrix §Tier S)"
+    },
+    "CC_BACKEND": {
+      "type": "string",
+      "enum": ["Anthropic", "Bedrock", "Vertex", "Foundry", "LiteLLM", "Custom"],
+      "description": "Where Claude Code is wired. Bedrock/LiteLLM force CC_NEEDS_STRIP_PROXY=yes (interview-flow §Validation rule 6)."
+    },
+    "CC_PRIMARY_URL": { "$ref": "#/$defs/httpsUrl", "description": "Gateway URL for Claude Code." },
+    "CC_FALLBACK_URL": {
+      "oneOf": [
+        { "$ref": "#/$defs/httpsUrl" },
+        { "type": "string", "maxLength": 0 }
+      ],
+      "default": "",
+      "description": "Optional secondary gateway URL or empty string."
+    },
+    "CC_PRIMARY_MODEL": {
+      "type": "string",
+      "default": "claude-sonnet-4-6",
+      "examples": ["claude-opus-4-7", "claude-sonnet-4-6"]
+    },
+    "CC_HAIKU_MODEL": {
+      "type": "string",
+      "default": "claude-haiku-4-5"
+    },
+    "CC_AUTH_MODEL": {
+      "type": "string",
+      "enum": ["bearer-token", "api-key", "aws-sdk-chain", "gcp-adc", "client-cert"],
+      "description": "Auth mechanism. bearer-token / api-key for Anthropic/LiteLLM/Foundry/Custom; aws-sdk-chain for Bedrock; gcp-adc for Vertex."
+    },
+    "CC_NEEDS_STRIP_PROXY": {
+      "$ref": "#/$defs/yesNo",
+      "description": "yes => spawn the local strip-proxy on 127.0.0.1:9876 to scrub Bedrock/LiteLLM SSE artefacts. Forced yes when CC_BACKEND in {Bedrock, LiteLLM}."
+    },
+    "CC_BEDROCK_REGION": {
+      "type": "string",
+      "pattern": "^[a-z]{2}-[a-z]+-[0-9]$",
+      "default": "eu-west-3",
+      "description": "AWS region (Bedrock only)."
+    },
+    "CC_VERTEX_PROJECT": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{4,28}[a-z0-9]$",
+      "description": "GCP project ID (Vertex only)."
+    },
+    "CC_VERTEX_REGION": {
+      "type": "string",
+      "default": "europe-west4"
+    },
+
+    "$comment_section_3b": {
+      "description": "Section 3.B — Codex CLI branch (interview-flow §3.B)"
+    },
+    "CX_BACKEND": {
+      "type": "string",
+      "enum": ["OpenAI", "Azure OpenAI", "Bedrock", "Custom"]
+    },
+    "CX_PRIMARY_URL": { "$ref": "#/$defs/httpsUrl" },
+    "CX_PRIMARY_MODEL": { "type": "string", "default": "gpt-5-codex" },
+    "CX_AUTH_ENV_KEY": {
+      "type": "string",
+      "pattern": "^[A-Z_][A-Z0-9_]*$",
+      "default": "OPENAI_API_KEY",
+      "description": "Name of the env var that will hold the API token."
+    },
+    "CX_WIRE_API": {
+      "type": "string",
+      "enum": ["responses", "chat-completions"],
+      "default": "responses"
+    },
+    "CX_REQUIRE_LOCKDOWN": { "$ref": "#/$defs/yesNo", "default": "yes" },
+    "CX_PROVIDER_ID": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "description": "ID used in [model_providers.<id>] block of config.toml. Derived from CX_BACKEND if absent."
+    },
+
+    "$comment_section_3c": {
+      "description": "Section 3.C — Gemini CLI branch (interview-flow §3.C, provider-matrix Vertex caveat)"
+    },
+    "GM_BACKEND": {
+      "type": "string",
+      "enum": ["Vertex AI", "AI Studio"]
+    },
+    "GM_PRIMARY_MODEL": { "type": "string", "default": "gemini-2.5-pro" },
+    "GM_VERTEX_PROJECT": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{4,28}[a-z0-9]$"
+    },
+    "GM_VERTEX_LOCATION": { "type": "string", "default": "europe-west4" },
+    "GM_AUTH_MODE": {
+      "type": "string",
+      "enum": ["ADC", "service-account", "api-key"],
+      "default": "ADC"
+    },
+    "GM_FORCE_VERTEX": { "$ref": "#/$defs/yesNo", "default": "yes" },
+
+    "$comment_section_3d": {
+      "description": "Section 3.D — OpenAI-compatible branch shared by Aider / opencode / Continue.dev (interview-flow §3.D)"
+    },
+    "LLM_OPENAI_BASE_URL": { "$ref": "#/$defs/httpsUrl" },
+    "LLM_OPENAI_AUTH": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Bearer token or API key. May reference a secret store as ${secret:<id>} — never the literal value in the saved config."
+    },
+    "LLM_PRIMARY_MODEL": { "type": "string", "minLength": 1 },
+
+    "$comment_section_4": {
+      "description": "Section 4 — Network (interview-flow §4)"
+    },
+    "VPN_REQUIRED": { "$ref": "#/$defs/yesNo", "default": "yes" },
+    "VPN_PROBE_URL": {
+      "oneOf": [
+        { "$ref": "#/$defs/httpsUrl" },
+        { "type": "string", "maxLength": 0 }
+      ],
+      "description": "Internal-only URL. HTTP code != 000 means VPN is up."
+    },
+    "PROXY_HOST": {
+      "oneOf": [
+        { "$ref": "#/$defs/hostname" },
+        { "type": "string", "maxLength": 0 }
+      ],
+      "default": ""
+    },
+    "PROXY_PORT": {
+      "oneOf": [
+        { "type": "integer", "minimum": 1, "maximum": 65535 },
+        { "type": "string", "pattern": "^(0|[1-9][0-9]{0,4})$" },
+        { "type": "string", "maxLength": 0 }
+      ],
+      "default": 8080,
+      "description": "TCP port, integer or numeric string (templates substitute as a string). Empty string allowed when PROXY_HOST is empty. Range 1-65535."
+    },
+    "PROXY_REQUIRE_AUTH": { "$ref": "#/$defs/yesNo", "default": "no" },
+    "NO_PROXY_LIST": {
+      "type": "string",
+      "default": "127.0.0.1,localhost",
+      "description": "Comma-separated bypass list. The strip-proxy address 127.0.0.1 must always be present."
+    },
+    "CA_BUNDLE_PATH": {
+      "oneOf": [
+        { "$ref": "#/$defs/path" },
+        { "type": "string", "maxLength": 0 }
+      ],
+      "default": "",
+      "description": "Absolute path to the corporate CA bundle PEM."
+    },
+    "CA_DETECT_AUTO": { "$ref": "#/$defs/yesNo", "default": "yes" },
+    "ACCEPT_TLS_INSPECTION": {
+      "$ref": "#/$defs/yesNo",
+      "default": "no",
+      "description": "yes => the launcher is allowed to fall back to NODE_TLS_REJECT_UNAUTHORIZED=0 (interview-flow §4). Strongly discouraged."
+    },
+
+    "$comment_section_5": {
+      "description": "Section 5 — Cyber (interview-flow §5, env-vars.md telemetry kill switches)"
+    },
+    "CYBER_RULES_FILE": {
+      "$ref": "#/$defs/path",
+      "default": "shared/cyber-rules.md"
+    },
+    "CYBER_AUTHORITY": {
+      "type": "string",
+      "minLength": 1,
+      "examples": ["ACME Group CISO", "Globex Security Office"]
+    },
+    "BLOCK_TELEMETRY": { "$ref": "#/$defs/yesNo", "default": "yes" },
+    "BLOCK_AUTO_UPDATE": { "$ref": "#/$defs/yesNo", "default": "yes" },
+    "BLOCK_FEEDBACK_CMDS": { "$ref": "#/$defs/yesNo", "default": "yes" },
+    "BLOCK_VOICE_MODE": { "$ref": "#/$defs/yesNo", "default": "yes" },
+    "COST_TRACKING_ENABLED": { "$ref": "#/$defs/yesNo", "default": "yes" },
+    "COST_CURRENCY": {
+      "type": "string",
+      "enum": ["EUR", "USD", "GBP", "CHF", "JPY", "CAD", "AUD"],
+      "default": "EUR"
+    },
+    "PROMPT_FILTER_ENABLED": { "$ref": "#/$defs/yesNo", "default": "yes" },
+
+    "$comment_section_6": {
+      "description": "Section 6 — Branding (interview-flow §6)"
+    },
+    "BRANDING_SYSTEM_PROMPT": {
+      "type": "string",
+      "description": "Custom system prompt addendum that rebrands the assistant. Generated from CORP_NAME if omitted."
+    },
+    "BANNER_COLOR_PRIMARY": {
+      "type": "string",
+      "pattern": "^([0-9]{1,3}|[a-z]+)$",
+      "default": "208",
+      "description": "ANSI 256-color code or name."
+    },
+    "TERMINAL_TITLE": {
+      "type": "string",
+      "default": "${CORP_NAME} — Powered by ${CORP_POWERED_BY}"
+    },
+    "LANGUAGE": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "default": "en",
+      "examples": ["fr", "en", "de", "es", "it"]
+    },
+    "FORBIDDEN_TERMS": {
+      "type": "string",
+      "description": "Comma-separated words the assistant must never output (e.g. vendor names).",
+      "default": "Claude,Anthropic"
+    },
+
+    "$comment_section_7": {
+      "description": "Section 7 — Install layout (interview-flow §7)"
+    },
+    "INSTALL_DIR": {
+      "$ref": "#/$defs/path",
+      "default": "~/.local/share/${CORP_SLUG}"
+    },
+    "BIN_PATH": {
+      "$ref": "#/$defs/path",
+      "default": "~/.local/bin"
+    },
+    "SHELL_RC": {
+      "type": "string",
+      "enum": ["auto", "zsh", "bash", "fish", "powershell"],
+      "default": "auto"
+    },
+    "LICENSE_TYPE": {
+      "type": "string",
+      "enum": ["Internal-only", "Proprietary", "MIT", "Apache-2.0", "BSD-3-Clause", "GPL-3.0"],
+      "default": "Internal-only"
+    },
+    "INCLUDE_UNINSTALL": { "$ref": "#/$defs/yesNo", "default": "yes" },
+
+    "$comment_section_8": {
+      "description": "Section 8 — Skills bundle and MCP servers (reference/skills-bundle.md, reference/mcp-aider-note.md)"
+    },
+    "SKILLS_MODE": {
+      "type": "string",
+      "enum": ["none", "preset", "pick", "git", "local", "combined"],
+      "description": "How the launcher sources skills for colleagues."
+    },
+    "SKILLS_PRESETS": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["design-pack", "security-pack", "data-pack", "ops-pack"]
+      },
+      "default": []
+    },
+    "SKILLS_PICK": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,40}$" },
+      "default": [],
+      "description": "Individually picked skill slugs from the curated catalogue."
+    },
+    "SKILLS_GIT_URL": {
+      "oneOf": [
+        { "$ref": "#/$defs/anyUrl" },
+        { "type": "string", "pattern": "^git@[A-Za-z0-9.-]+:[A-Za-z0-9._/-]+\\.git$" },
+        { "type": "string", "maxLength": 0 }
+      ],
+      "description": "https://... or git@host:org/repo.git"
+    },
+    "SKILLS_GIT_REF": {
+      "type": "string",
+      "default": "main",
+      "description": "Branch / tag / commit SHA."
+    },
+    "SKILLS_LOCAL_PATH": {
+      "oneOf": [
+        { "$ref": "#/$defs/path" },
+        { "type": "string", "maxLength": 0 }
+      ]
+    },
+    "MCP_SERVERS": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/$defs/mcpServer" },
+      "description": "Pre-configured MCP servers. Aider has no native MCP support (reference/mcp-aider-note.md) — combining MCP_SERVERS with aider in WRAPPED_CLIS yields a runtime warning."
+    },
+
+    "$comment_section_9": {
+      "description": "Section 9 — Distribution (reference/distribution-modes.md)"
+    },
+    "DIST_MODE": {
+      "type": "string",
+      "enum": ["public-git", "private-git", "tarball", "oneliner", "none"]
+    },
+    "DIST_REPO_HOST": {
+      "type": "string",
+      "enum": ["github", "gitlab", "bitbucket", "internal-gitea", "internal-gitlab"]
+    },
+    "DIST_REPO_URL": {
+      "oneOf": [
+        { "$ref": "#/$defs/anyUrl" },
+        { "type": "string", "pattern": "^git@[A-Za-z0-9.-]+:[A-Za-z0-9._/-]+\\.git$" }
+      ]
+    },
+    "DIST_REPO_VISIBILITY": {
+      "type": "string",
+      "enum": ["public", "internal", "private"]
+    },
+    "DIST_REGISTRY_URL": { "$ref": "#/$defs/httpsUrl" },
+    "DIST_ONELINER_HOST": {
+      "$ref": "#/$defs/httpsUrl",
+      "description": "HTTPS-only. Plain HTTP is refused (interview-flow §Validation rule 8)."
+    },
+    "DIST_SIGN_RELEASE": { "type": "boolean", "default": false },
+    "DIST_GPG_KEY_ID": {
+      "type": "string",
+      "pattern": "^(0x)?[A-Fa-f0-9]{8,40}$",
+      "description": "GPG key id (long form or full fingerprint)."
+    },
+    "DIST_PUBLIC_FORCE": {
+      "$ref": "#/$defs/yesNo",
+      "default": "no",
+      "description": "Required override when DIST_MODE=public-git and CC_PRIMARY_URL points at an internal host (interview-flow §Validation rule 7)."
+    }
+  },
+
+  "allOf": [
+    {
+      "$comment": "Rule: CORP_SLUG default consistency — when WRAPPED_CLIS contains claude-code, the CC_* block must be present.",
+      "if": {
+        "properties": { "WRAPPED_CLIS": { "type": "array", "contains": { "const": "claude-code" } } },
+        "required": ["WRAPPED_CLIS"]
+      },
+      "then": {
+        "required": ["CC_BACKEND", "CC_PRIMARY_URL", "CC_AUTH_MODEL"]
+      }
+    },
+    {
+      "$comment": "Validation rule 6 (interview-flow.md): CC_BACKEND=Bedrock or LiteLLM forces CC_NEEDS_STRIP_PROXY=yes.",
+      "if": {
+        "properties": { "CC_BACKEND": { "enum": ["Bedrock", "LiteLLM"] } },
+        "required": ["CC_BACKEND"]
+      },
+      "then": {
+        "properties": { "CC_NEEDS_STRIP_PROXY": { "const": "yes" } },
+        "required": ["CC_NEEDS_STRIP_PROXY"]
+      }
+    },
+    {
+      "$comment": "Bedrock backend requires AWS region.",
+      "if": {
+        "properties": { "CC_BACKEND": { "const": "Bedrock" } },
+        "required": ["CC_BACKEND"]
+      },
+      "then": { "required": ["CC_BEDROCK_REGION"] }
+    },
+    {
+      "$comment": "Vertex backend on Claude Code requires a GCP project.",
+      "if": {
+        "properties": { "CC_BACKEND": { "const": "Vertex" } },
+        "required": ["CC_BACKEND"]
+      },
+      "then": { "required": ["CC_VERTEX_PROJECT"] }
+    },
+    {
+      "$comment": "Codex CLI wrapped => Codex block required.",
+      "if": {
+        "properties": { "WRAPPED_CLIS": { "type": "array", "contains": { "const": "codex-cli" } } },
+        "required": ["WRAPPED_CLIS"]
+      },
+      "then": {
+        "required": ["CX_BACKEND", "CX_PRIMARY_URL", "CX_AUTH_ENV_KEY"]
+      }
+    },
+    {
+      "$comment": "Gemini CLI wrapped => Gemini block required.",
+      "if": {
+        "properties": { "WRAPPED_CLIS": { "type": "array", "contains": { "const": "gemini-cli" } } },
+        "required": ["WRAPPED_CLIS"]
+      },
+      "then": {
+        "required": ["GM_BACKEND", "GM_PRIMARY_MODEL"]
+      }
+    },
+    {
+      "$comment": "Vertex variant of Gemini CLI requires project + ADC by default (provider-matrix).",
+      "if": {
+        "properties": { "GM_BACKEND": { "const": "Vertex AI" } },
+        "required": ["GM_BACKEND"]
+      },
+      "then": { "required": ["GM_VERTEX_PROJECT", "GM_VERTEX_LOCATION"] }
+    },
+    {
+      "$comment": "Any OpenAI-compatible CLI (aider / opencode / continue-dev) requires the LLM_* block.",
+      "if": {
+        "anyOf": [
+          { "properties": { "WRAPPED_CLIS": { "type": "array", "contains": { "const": "aider" } } } },
+          { "properties": { "WRAPPED_CLIS": { "type": "array", "contains": { "const": "opencode" } } } },
+          { "properties": { "WRAPPED_CLIS": { "type": "array", "contains": { "const": "continue-dev" } } } }
+        ],
+        "required": ["WRAPPED_CLIS"]
+      },
+      "then": {
+        "required": ["LLM_OPENAI_BASE_URL", "LLM_OPENAI_AUTH", "LLM_PRIMARY_MODEL"]
+      }
+    },
+    {
+      "$comment": "Validation rule 4 (interview-flow.md): PROXY_HOST and PROXY_PORT must be set together — no half-config.",
+      "if": {
+        "properties": { "PROXY_HOST": { "type": "string", "minLength": 1 } },
+        "required": ["PROXY_HOST"]
+      },
+      "then": { "required": ["PROXY_PORT"] }
+    },
+    {
+      "$comment": "SKILLS_MODE=git requires the git URL (interview-flow §8).",
+      "if": {
+        "properties": { "SKILLS_MODE": { "const": "git" } },
+        "required": ["SKILLS_MODE"]
+      },
+      "then": {
+        "required": ["SKILLS_GIT_URL"],
+        "properties": { "SKILLS_GIT_URL": { "type": "string", "minLength": 1 } }
+      }
+    },
+    {
+      "$comment": "SKILLS_MODE=local requires the local path.",
+      "if": {
+        "properties": { "SKILLS_MODE": { "const": "local" } },
+        "required": ["SKILLS_MODE"]
+      },
+      "then": {
+        "required": ["SKILLS_LOCAL_PATH"],
+        "properties": { "SKILLS_LOCAL_PATH": { "type": "string", "minLength": 1 } }
+      }
+    },
+    {
+      "$comment": "SKILLS_MODE=preset requires at least one preset.",
+      "if": {
+        "properties": { "SKILLS_MODE": { "const": "preset" } },
+        "required": ["SKILLS_MODE"]
+      },
+      "then": {
+        "properties": { "SKILLS_PRESETS": { "minItems": 1 } },
+        "required": ["SKILLS_PRESETS"]
+      }
+    },
+    {
+      "$comment": "SKILLS_MODE=pick requires at least one picked skill.",
+      "if": {
+        "properties": { "SKILLS_MODE": { "const": "pick" } },
+        "required": ["SKILLS_MODE"]
+      },
+      "then": {
+        "properties": { "SKILLS_PICK": { "minItems": 1 } },
+        "required": ["SKILLS_PICK"]
+      }
+    },
+    {
+      "$comment": "DIST_MODE in {public-git, private-git} requires repo URL + host + visibility.",
+      "if": {
+        "properties": { "DIST_MODE": { "enum": ["public-git", "private-git"] } },
+        "required": ["DIST_MODE"]
+      },
+      "then": { "required": ["DIST_REPO_URL", "DIST_REPO_HOST", "DIST_REPO_VISIBILITY"] }
+    },
+    {
+      "$comment": "DIST_MODE=tarball requires a registry URL.",
+      "if": {
+        "properties": { "DIST_MODE": { "const": "tarball" } },
+        "required": ["DIST_MODE"]
+      },
+      "then": { "required": ["DIST_REGISTRY_URL"] }
+    },
+    {
+      "$comment": "Validation rule 8 (interview-flow.md): DIST_MODE=oneliner requires DIST_ONELINER_HOST and refuses plain HTTP (enforced by httpsUrl pattern).",
+      "if": {
+        "properties": { "DIST_MODE": { "const": "oneliner" } },
+        "required": ["DIST_MODE"]
+      },
+      "then": { "required": ["DIST_ONELINER_HOST"] }
+    },
+    {
+      "$comment": "DIST_SIGN_RELEASE=true requires a GPG key id.",
+      "if": {
+        "properties": { "DIST_SIGN_RELEASE": { "const": true } },
+        "required": ["DIST_SIGN_RELEASE"]
+      },
+      "then": {
+        "required": ["DIST_GPG_KEY_ID"],
+        "properties": { "DIST_GPG_KEY_ID": { "type": "string", "minLength": 8 } }
+      }
+    },
+    {
+      "$comment": "Validation rule 7 (interview-flow.md): public-git distribution of a launcher whose Claude Code gateway is on an internal hostname (*.internal, *.local) is refused unless DIST_PUBLIC_FORCE=yes.",
+      "if": {
+        "allOf": [
+          {
+            "properties": { "DIST_MODE": { "const": "public-git" } },
+            "required": ["DIST_MODE"]
+          },
+          {
+            "properties": {
+              "CC_PRIMARY_URL": {
+                "type": "string",
+                "pattern": "^https://[^/]+\\.(internal|local|intra|corp)(:[0-9]+)?(/|$)"
+              }
+            },
+            "required": ["CC_PRIMARY_URL"]
+          }
+        ]
+      },
+      "then": {
+        "properties": { "DIST_PUBLIC_FORCE": { "const": "yes" } },
+        "required": ["DIST_PUBLIC_FORCE"]
+      }
+    },
+    {
+      "$comment": "Validation rule 5 (interview-flow.md): BLOCK_TELEMETRY=yes is all-or-nothing — every other BLOCK_* must also be yes.",
+      "if": {
+        "properties": { "BLOCK_TELEMETRY": { "const": "yes" } },
+        "required": ["BLOCK_TELEMETRY"]
+      },
+      "then": {
+        "properties": {
+          "BLOCK_AUTO_UPDATE":    { "const": "yes" },
+          "BLOCK_FEEDBACK_CMDS":  { "const": "yes" },
+          "BLOCK_VOICE_MODE":     { "const": "yes" }
+        }
+      }
+    },
+    {
+      "$comment": "ACCEPT_TLS_INSPECTION=yes is only allowed when CA_BUNDLE_PATH is empty (last-resort fallback).",
+      "if": {
+        "properties": { "ACCEPT_TLS_INSPECTION": { "const": "yes" } },
+        "required": ["ACCEPT_TLS_INSPECTION"]
+      },
+      "then": {
+        "properties": { "CA_BUNDLE_PATH": { "type": "string", "maxLength": 0 } }
+      }
+    },
+    {
+      "$comment": "Info-level note (non-blocking): mixing aider in WRAPPED_CLIS with non-empty MCP_SERVERS is supported but Aider has no native MCP — see reference/mcp-aider-note.md. The launcher emits a runtime warning; the schema does not reject it.",
+      "if": {
+        "allOf": [
+          { "properties": { "WRAPPED_CLIS": { "type": "array", "contains": { "const": "aider" } } } },
+          { "properties": { "MCP_SERVERS": { "type": "array", "minItems": 1 } } }
+        ]
+      },
+      "then": { "$comment": "informational only — no constraint enforced" }
+    }
+  ]
+}

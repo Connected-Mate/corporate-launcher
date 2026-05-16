@@ -146,9 +146,23 @@ else
     prompt_for_api_key
 fi
 
-step "[7/7] Done"
+step "[8/10] Extract corporate CA (if requested)"
+if [ "${CA_DETECT_AUTO}" = "yes" ] && [ -f "$INSTALL_DIR/scripts/extract-corp-ca.sh" ]; then
+    source "$INSTALL_DIR/scripts/extract-corp-ca.sh" && extract_corp_ca || true
+fi
+
+step "[9/10] Install bundled skills + MCP"
+if [ -f "$INSTALL_DIR/scripts/install-skills.sh" ]; then
+    source "$INSTALL_DIR/scripts/install-skills.sh" && install_skills || true
+fi
+if [ -f "$INSTALL_DIR/scripts/install-mcp.sh" ]; then
+    source "$INSTALL_DIR/scripts/install-mcp.sh" && install_mcp_servers || true
+fi
+
+step "[10/10] Done"
 printf '\n$\{ORANGE\}$\{BOLD\}  Installation complete.$\{RESET\}\n\n'
 printf '  Launch with    : $\{GREEN\}${CORP_SLUG}$\{RESET\}\n'
 printf '  Diagnostics    : $\{DIM\}${CORP_SLUG} --status$\{RESET\}\n'
+printf '  Update         : $\{DIM\}${CORP_SLUG} --update$\{RESET\}\n'
 printf '  Uninstall      : $\{DIM\}${CORP_SLUG} --uninstall$\{RESET\}\n\n'
 [ "${VPN_REQUIRED}" = "yes" ] && printf '  $\{YELLOW\}[!]$\{RESET\}  Corporate VPN required before first launch.\n\n'

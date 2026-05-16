@@ -235,7 +235,22 @@ fi
 chmod +x "$INSTALL_DIR/bin/${CORP_SLUG}" 2>/dev/null || true
 info "Shell block added."
 
+# tpl: --- Optional extras (CA bundle / skills / MCP) -----------------------
+if [ "${CA_DETECT_AUTO}" = "yes" ] && [ -f "$INSTALL_DIR/scripts/extract-corp-ca.sh" ]; then
+    # shellcheck source=/dev/null
+    source "$INSTALL_DIR/scripts/extract-corp-ca.sh" && extract_corp_ca || true
+fi
+if [ -f "$INSTALL_DIR/scripts/install-skills.sh" ]; then
+    # shellcheck source=/dev/null
+    source "$INSTALL_DIR/scripts/install-skills.sh" && install_skills || true
+fi
+if [ -f "$INSTALL_DIR/scripts/install-mcp.sh" ]; then
+    # shellcheck source=/dev/null
+    source "$INSTALL_DIR/scripts/install-mcp.sh" && install_mcp_servers || true
+fi
+
 # --- Done ---------------------------------------------------------------------
 printf '\n  %b%b%s installed successfully.%b\n\n' "$ORANGE" "$BOLD" "$CORP_NAME" "$RESET"
 printf '  Reload your shell:  %bsource %s%b\n' "$GREEN" "$SHELL_RC" "$RESET"
 printf '  Launch:             %b%s%b\n\n' "$GREEN" "$CORP_SLUG" "$RESET"
+printf '  Update:             %b%s --update%b\n\n' "$GREEN" "$CORP_SLUG" "$RESET"

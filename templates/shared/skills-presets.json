@@ -1,0 +1,178 @@
+{
+  "design-pack": {
+    "description": "UI/UX skills: layout, typography, color, animation, audit, polish, critique, and more. Suited for product teams, design engineers, and full-stack developers.",
+    "skills": [
+      {
+        "name": "polish",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "polish/",
+        "ref": "main"
+      },
+      {
+        "name": "audit",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "audit/",
+        "ref": "main"
+      },
+      {
+        "name": "critique",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "critique/",
+        "ref": "main"
+      },
+      {
+        "name": "distill",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "distill/",
+        "ref": "main"
+      },
+      {
+        "name": "clarify",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "clarify/",
+        "ref": "main"
+      },
+      {
+        "name": "typeset",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "typeset/",
+        "ref": "main"
+      },
+      {
+        "name": "layout",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "layout/",
+        "ref": "main"
+      },
+      {
+        "name": "animate",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "animate/",
+        "ref": "main"
+      },
+      {
+        "name": "colorize",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "colorize/",
+        "ref": "main"
+      },
+      {
+        "name": "bolder",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "bolder/",
+        "ref": "main"
+      },
+      {
+        "name": "quieter",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "quieter/",
+        "ref": "main"
+      },
+      {
+        "name": "harden",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "harden/",
+        "ref": "main"
+      },
+      {
+        "name": "optimize",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "optimize/",
+        "ref": "main"
+      },
+      {
+        "name": "delight",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "delight/",
+        "ref": "main"
+      },
+      {
+        "name": "adapt",
+        "source": "https://github.com/Connected-Mate/corporate-skills-design",
+        "subdir": "adapt/",
+        "ref": "main"
+      }
+    ]
+  },
+  "security-pack": {
+    "description": "Security skills: code review for vulnerabilities, threat modeling, SBOM checks, and secret scanning.",
+    "skills": [
+      {
+        "name": "security-review",
+        "source": "https://github.com/Connected-Mate/corporate-skills-security",
+        "subdir": "security-review/",
+        "ref": "main"
+      },
+      {
+        "name": "threat-model",
+        "source": "https://github.com/Connected-Mate/corporate-skills-security",
+        "subdir": "threat-model/",
+        "ref": "main"
+      },
+      {
+        "name": "sbom-check",
+        "source": "https://github.com/Connected-Mate/corporate-skills-security",
+        "subdir": "sbom-check/",
+        "ref": "main"
+      },
+      {
+        "name": "secret-scan",
+        "source": "https://github.com/Connected-Mate/corporate-skills-security",
+        "subdir": "secret-scan/",
+        "ref": "main"
+      }
+    ]
+  },
+  "data-pack": {
+    "description": "Data engineering skills: SQL review, dbt model linting, and dataframe exploration helpers.",
+    "skills": [
+      {
+        "name": "sql-review",
+        "source": "https://github.com/Connected-Mate/corporate-skills-data",
+        "subdir": "sql-review/",
+        "ref": "main"
+      },
+      {
+        "name": "dbt-lint",
+        "source": "https://github.com/Connected-Mate/corporate-skills-data",
+        "subdir": "dbt-lint/",
+        "ref": "main"
+      },
+      {
+        "name": "dataframe-explorer",
+        "source": "https://github.com/Connected-Mate/corporate-skills-data",
+        "subdir": "dataframe-explorer/",
+        "ref": "main"
+      }
+    ]
+  },
+  "ops-pack": {
+    "description": "Operations and SRE skills: incident templates, postmortems, runbook generation, and on-call handoff.",
+    "skills": [
+      {
+        "name": "incident-template",
+        "source": "https://github.com/Connected-Mate/corporate-skills-ops",
+        "subdir": "incident-template/",
+        "ref": "main"
+      },
+      {
+        "name": "postmortem",
+        "source": "https://github.com/Connected-Mate/corporate-skills-ops",
+        "subdir": "postmortem/",
+        "ref": "main"
+      },
+      {
+        "name": "runbook-generator",
+        "source": "https://github.com/Connected-Mate/corporate-skills-ops",
+        "subdir": "runbook-generator/",
+        "ref": "main"
+      },
+      {
+        "name": "oncall-handoff",
+        "source": "https://github.com/Connected-Mate/corporate-skills-ops",
+        "subdir": "oncall-handoff/",
+        "ref": "main"
+      }
+    ]
+  }
+}
