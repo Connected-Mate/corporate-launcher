@@ -224,19 +224,21 @@ main() {
         --uninstall)      cmd_uninstall; exit 0 ;;
     esac
 
+    # tpl: dry-run short-circuits the VPN / isolation checks so CI and smoke
+    # tests can exercise the launcher without a corporate network.
+    if [ "$\{${CORP_SLUG_UPPER}_DRY_RUN:-0\}" = "1" ]; then
+        setup_isolation 2>/dev/null || true
+        printf 'DRY RUN — environment ready, would exec: claude %s\n' "$*"
+        env | grep -E '^(ANTHROPIC_|CLAUDE_CODE_|${CORP_SLUG_UPPER}_)' | sort
+        exit 0
+    fi
+
     if [ "${VPN_REQUIRED}" = "yes" ]; then
         check_vpn || exit 1
     fi
 
     setup_isolation
     show_banner
-
-    # tpl: dry-run mode for CI / testing
-    if [ "$\{${CORP_SLUG_UPPER}_DRY_RUN:-0\}" = "1" ]; then
-        printf 'DRY RUN — environment ready, would exec: claude %s\n' "$*"
-        env | grep -E '^(ANTHROPIC_|CLAUDE_CODE_|${CORP_SLUG_UPPER}_)' | sort
-        exit 0
-    fi
 
     # tpl: append the BRANDING + cyber rules to the system prompt
     local prompt_file="$\{${CORP_SLUG_UPPER}_HOME\}/BRANDING.md"

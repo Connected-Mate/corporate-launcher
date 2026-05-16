@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/hero.png" alt="Corporate Launcher — Create & launch AI code agents in your company" width="100%" />
+
 # Corporate Launcher
 
 **An AI-coding-host skill that builds a secure, branded corporate launcher around Claude Code, Codex CLI, Gemini CLI, Cursor, or Cline — and helps you ship it to your team.**

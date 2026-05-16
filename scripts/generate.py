@@ -455,6 +455,12 @@ def main(argv: list[str] | None = None) -> int:
         else install_dir.parent / "dist"
     )
 
+    # Dynamic, render-time defaults the templates expect.
+    import datetime as _dt
+    _now = _dt.datetime.now(_dt.timezone.utc)
+    ctx.setdefault("DIST_GENERATED_AT", _now.strftime("%Y-%m-%dT%H:%M:%SZ"))
+    ctx.setdefault("DIST_YEAR", str(_now.year))
+
     print(f"Generating launcher for {ctx.get('CORP_NAME')!r} (slug={ctx.get('CORP_SLUG')!r})")
     print(f"  install_dir = {install_dir}")
     print(f"  dist_dir    = {dist_dir}")

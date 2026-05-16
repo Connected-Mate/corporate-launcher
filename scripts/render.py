@@ -26,7 +26,11 @@ from pathlib import Path
 from typing import Mapping
 
 VAR_RE = re.compile(r"\$\{([A-Z][A-Z0-9_]*)\}")
-ESCAPED_RE = re.compile(r"\$\\\{([^}]+)\\\}")
+# Match a literal `$\{...\}` escape. Forbid `$\{` and `\}` *inside* the body
+# so the innermost escape is replaced first; outer escapes are then handled
+# in subsequent passes (see `_unescape_literals`). This is the only way to
+# unwrap nested shell parameter defaults like `$\{OUTER:-$\{INNER\}\}`.
+ESCAPED_RE = re.compile(r"\$\\\{((?:(?!\$\\\{|\\\}).)*?)\\\}")
 TPL_COMMENT_RE = re.compile(r"^\s*(#|//)\s*tpl:.*$")
 
 
@@ -54,8 +58,13 @@ def render(text: str, ctx: Mapping[str, object]) -> str:
 
     # Pass 1: substitute real ${VAR}
     out = VAR_RE.sub(repl, text)
-    # Pass 2: unescape $\{LITERAL\} → ${LITERAL}
-    out = ESCAPED_RE.sub(r"${\1}", out)
+    # Pass 2: unescape $\{LITERAL\} → ${LITERAL}, iteratively from innermost
+    # out, so nested escapes (rare but valid in bash defaults) all unwrap.
+    while True:
+        replaced = ESCAPED_RE.sub(r"${\1}", out)
+        if replaced == out:
+            break
+        out = replaced
     # Pass 3: strip # tpl: comment lines
     out = "\n".join(line for line in out.splitlines() if not TPL_COMMENT_RE.match(line))
     return out
