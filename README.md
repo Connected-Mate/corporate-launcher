@@ -68,13 +68,25 @@ Your company's coding conventions ride alongside the cyber rules. 4 source modes
 - **URL purge**: defense-in-depth sweep for any leaked `api.anthropic.com` / `api.openai.com` / vendor endpoint outside the explicit deny list. Optional auto-patch.
 - **Compliance .docx**: 10-section Word document ready to send to RSSI/CISO/DPO. Architecture, threat model, cyber controls, network perimeter, audit log, offboarding, sign-off section.
 
-### 6. Universal cost tracking
+### 6. Legal compliance check (NEW v0.9)
+Every wrapped CLI has Terms of Service that restrict legal model providers. **Claude Code → OpenAI / Azure OpenAI / Gemini = breach of Anthropic Commercial Terms §D.4** (Anthropic publicly revoked OpenAI's Claude API access in Aug 2025 citing this clause). The launcher refuses to generate breach-of-contract configurations.
+
+- 7 CLIs × 14 backends = 98-cell verdict matrix in `scripts/legal-matrix.json`
+- Each forbidden combo carries the verbatim TOS clause + source URL + last-read date
+- Override paths: `--legal-reviewed=YYYY-MM-DD --legal-reviewer="Name <email>"` for ambiguous combos, `--legal-override="<reason>"` for forbidden ones (rare, requires counsel sign-off)
+- `<install>/.legal-attestation.json` records the verdict + reviewer + date for the audit trail
+- Matrix freshness enforced: regenerate refuses if `last_read_date` is older than 180 days
+- Re-verify the matrix every 6 months — TOS evolve
+
+See [`references/legal-compatibility.md`](references/legal-compatibility.md) for the full clause-by-clause analysis.
+
+### 7. Universal cost tracking
 Every generated launcher (all 7 CLIs) gets a `--cost session|today|history|push` subcommand by default. Native usage adapters for Gemini (OTLP file sink, real Vertex `usageMetadata`), Cline (parse VS Code globalStorage), Codex (parse `~/.codex/sessions/`). PowerShell parity. Per-org rollup script for FinOps that operates several tenants.
 
-### 7. Skills bundle for your team
+### 8. Skills bundle for your team
 Pick which skills travel inside the launcher for your colleagues: design pack, internal review skill, MCP servers, private monorepo, local folder. They install with the launcher.
 
-### 8. Distribution kit
+### 9. Distribution kit
 Public GitHub repo, private GitLab, tarball + checksum, one-liner install URL on your intranet, or local-only. The skill generates the matching artifacts and gives you the exact commands.
 
 ---

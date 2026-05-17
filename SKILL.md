@@ -8,6 +8,9 @@ compatibility:
   claude-code: ">=2.6.0"
 paths: []
 hooks:
+  PreToolUse:
+    - matcher: "Bash(python3:scripts/generate.py*)"
+      command: "${CLAUDE_SKILL_DIR}/scripts/legal-matrix-freshness.sh"
   PostToolUse:
     - matcher: "Bash(python3:scripts/generate.py*)"
       command: "${CLAUDE_SKILL_DIR}/scripts/audit-launcher.py --post-tool"
@@ -68,6 +71,19 @@ Sections in order:
 8. **Distribution** — how to ship the launcher to the team (public/private repo, tarball, one-liner)
 
 If the user replies "I don't know" to a network/cyber question, mark it `unknown` and continue — generate sane defaults and flag them in the post-install summary so the security office can review.
+
+### Phase 1.4 — Legal compliance check (NEW v0.9)
+
+> Why: each wrapped CLI has Terms of Service that restrict which model providers it can legally talk to. The textbook example is **Claude Code → OpenAI / Azure OpenAI / Gemini = breach of Anthropic Commercial Terms §D.4 ("no competing services")**. Anthropic publicly revoked OpenAI's Claude API access in August 2025 citing exactly this clause. A corporate launcher that generates a breach-of-contract configuration is a Day-1 lawsuit risk for the customer org.
+
+> What: reads `${CLAUDE_SKILL_DIR}/scripts/legal-matrix.json` (the result of reading each CLI's TOS, dated and re-verifiable). For each `WRAPPED_CLIS` × backend pair, looks up the verdict:
+> - `allowed` → silent pass.
+> - `ambiguous` → block unless the operator supplies `--legal-reviewed=YYYY-MM-DD --legal-reviewer="Name <email>"`. Documents the legal review in `<install>/.legal-attestation.json`.
+> - `forbidden` → refuse generation with the verbatim TOS citation. Override only via `--legal-override="<documented reason>"` (rare — requires legal counsel sign-off).
+
+> Freshness: refuses generation if `legal-matrix.json` is older than `reverify_after_days` (default 180). A `PreToolUse` hook also surfaces stale-matrix warnings before the user invests time in the interview.
+
+> Re-verification: re-run the TOS-reading agent every 6 months. The matrix carries `last_read_date` so audits know exactly when each verdict was sourced.
 
 ### Phase 1.5 — Probe the gateway
 

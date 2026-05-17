@@ -488,6 +488,181 @@ def render_distribution(
 
 
 # ----------------------------------------------------------------------- #
+# Phase 1.4 — Legal compliance check                                      #
+# ----------------------------------------------------------------------- #
+
+
+# Map (cli, raw backend string) to a key in legal-matrix.json.
+# Anthropic-flavoured backends are recognised by substring so "bedrock",
+# "aws-bedrock", "bedrock-proxy" all collapse to bedrock-anthropic for
+# Claude Code (which is the only Anthropic-branded CLI we ship). For
+# litellm, missing "anthropic-only" / "openai-only" / "gemini-only"
+# hints default to "litellm-mixed" which forces an ambiguous verdict
+# and a legal review.
+def _legal_backend_key(cli: str, raw: str) -> str:
+    raw = raw.lower().strip()
+    if cli == "claude-code":
+        if raw in ("", "anthropic", "anthropic-api"): return "anthropic-api"
+        if "bedrock" in raw: return "bedrock-anthropic"
+        if "vertex" in raw and "anthropic" in raw: return "vertex-anthropic"
+        if raw == "vertex": return "vertex-anthropic"
+        if "foundry" in raw: return "foundry-anthropic"
+        if "azure" in raw: return "azure-openai"
+        if raw in ("openai", "openai-api"): return "openai"
+        if raw in ("ai-studio", "ai-studio-gemini"): return "ai-studio-gemini"
+        if "gemini" in raw and "vertex" in raw: return "vertex-gemini"
+        if "litellm" in raw:
+            for suf in ("anthropic-only", "openai-only", "gemini-only", "mixed"):
+                if suf in raw: return f"litellm-{suf}"
+            return "litellm-mixed"
+        if raw in ("self-hosted", "ollama", "vllm", "llama-cpp"): return "self-hosted-oss"
+        return raw
+    if cli == "codex-cli":
+        if "azure" in raw: return "azure-openai"
+        if raw == "openai": return "openai"
+        if "bedrock" in raw: return "bedrock-anthropic"
+        return raw or "openai"
+    if cli == "gemini-cli":
+        if raw == "vertex": return "vertex-gemini"
+        if raw in ("ai-studio", ""): return "ai-studio-gemini"
+        return raw
+    # aider / opencode / continue-dev / cline — LLM_BACKEND is a free-form
+    # gateway label; map only the well-known cases.
+    if "azure" in raw: return "azure-openai"
+    if "openai" in raw and "azure" not in raw: return "openai"
+    if "anthropic" in raw or "bedrock" in raw: return "bedrock-anthropic" if "bedrock" in raw else "anthropic-api"
+    if "vertex" in raw or "gemini" in raw: return "vertex-gemini"
+    if "litellm" in raw: return "litellm-mixed"
+    return raw or "litellm-mixed"
+
+
+def _load_legal_matrix() -> dict[str, Any]:
+    path = _skill_dir() / "scripts" / "legal-matrix.json"
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise GenerationError(f"legal-matrix.json is invalid JSON: {e}")
+
+
+def run_legal_check(
+    ctx: Mapping[str, object],
+    install_dir: Path,
+    *,
+    legal_reviewed: str | None,
+    legal_reviewer: str | None,
+    legal_override: str | None,
+    dry_run: bool,
+) -> None:
+    """Phase 1.4 — refuse breach-of-contract configurations.
+
+    Reads scripts/legal-matrix.json. For each wrapped CLI:
+      - status=forbidden → block unless --legal-override="<reason>"
+      - status=ambiguous → block unless --legal-reviewed=YYYY-MM-DD
+        and --legal-reviewer="Name <email>"
+      - status=allowed → silent pass
+
+    Stamps install_dir/.legal-attestation.json on success.
+    """
+    matrix = _load_legal_matrix()
+    if not matrix:
+        print("  warning: legal-matrix.json missing — skipping legal check")
+        return
+
+    # Freshness — refuse if the matrix is older than reverify_after_days.
+    import datetime as _dt
+    today = _dt.date.today()
+    try:
+        read_date = _dt.date.fromisoformat(str(matrix.get("last_read_date", "")))
+    except ValueError:
+        raise GenerationError("legal-matrix.json: invalid last_read_date")
+    reverify = int(matrix.get("reverify_after_days", 180))
+    age = (today - read_date).days
+    if age > reverify:
+        raise GenerationError(
+            f"legal-matrix.json is {age} days old (max {reverify}). "
+            "Rerun the TOS-reading agent and commit a refreshed matrix before generating."
+        )
+
+    wrapped = ctx.get("WRAPPED_CLIS") or []
+    if isinstance(wrapped, str):
+        wrapped = [wrapped]
+
+    findings: list[tuple[str, str, str, str]] = []  # (cli, backend_key, status, rationale)
+    for cli in wrapped:
+        cli_row = matrix.get("matrix", {}).get(cli)
+        if not cli_row:
+            print(f"  warning: no legal row for CLI {cli!r} — skipping")
+            continue
+        backend_raw = (
+            ctx.get({"claude-code": "CC_BACKEND",
+                     "codex-cli": "CX_BACKEND",
+                     "gemini-cli": "GM_BACKEND"}.get(cli, "LLM_BACKEND")) or ""
+        )
+        key = _legal_backend_key(cli, str(backend_raw))
+        status = cli_row.get(key, "ambiguous")
+        rationale = (
+            matrix.get("rationale", {}).get(f"{cli}:{key}")
+            or matrix.get("rationale", {}).get(f"{cli}:any-non-{cli.split('-')[0]}", "")
+            or "no rationale recorded"
+        )
+        findings.append((cli, key, status, rationale))
+
+    forbidden = [f for f in findings if f[2] == "forbidden"]
+    ambiguous = [f for f in findings if f[2] == "ambiguous"]
+
+    for cli, key, status, rationale in findings:
+        marker = {"allowed": "  [OK]  ", "ambiguous": "  [??]  ", "forbidden": "  [KO]  "}.get(status, "  [?]  ")
+        print(f"{marker}{cli} → {key}: {status}")
+
+    if forbidden:
+        if not legal_override:
+            msg = ["legal-check: FORBIDDEN configurations detected (would breach vendor TOS):"]
+            for cli, key, _, rationale in forbidden:
+                msg.append(f"  • {cli} → {key}")
+                msg.append(f"      {rationale}")
+            msg.append("Refusing to generate. To proceed under documented exception, rerun with:")
+            msg.append('  --legal-override="<reason approved by your legal counsel>"')
+            raise GenerationError("\n".join(msg))
+        print(f"  legal-override accepted: {legal_override}")
+
+    if ambiguous:
+        if not legal_reviewed or not legal_reviewer:
+            msg = ["legal-check: AMBIGUOUS configurations detected (legal review required):"]
+            for cli, key, _, rationale in ambiguous:
+                msg.append(f"  • {cli} → {key}")
+                msg.append(f"      {rationale}")
+            msg.append("Rerun with:")
+            msg.append('  --legal-reviewed=YYYY-MM-DD --legal-reviewer="Name <email>"')
+            raise GenerationError("\n".join(msg))
+        try:
+            _dt.date.fromisoformat(legal_reviewed)
+        except ValueError:
+            raise GenerationError(
+                f"--legal-reviewed must be ISO date YYYY-MM-DD (got {legal_reviewed!r})"
+            )
+
+    # Stamp attestation for audit trail.
+    if not dry_run:
+        install_dir.mkdir(parents=True, exist_ok=True)
+        attestation = {
+            "matrix_version": matrix.get("version"),
+            "matrix_last_read_date": str(matrix.get("last_read_date")),
+            "checked_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
+            "findings": [
+                {"cli": c, "backend_key": k, "status": s} for c, k, s, _ in findings
+            ],
+            "legal_reviewed": legal_reviewed,
+            "legal_reviewer": legal_reviewer,
+            "legal_override": legal_override,
+        }
+        (install_dir / ".legal-attestation.json").write_text(
+            json.dumps(attestation, indent=2, sort_keys=True), encoding="utf-8"
+        )
+
+
+# ----------------------------------------------------------------------- #
 # Phase 1.5 — API gateway probe                                           #
 # ----------------------------------------------------------------------- #
 
@@ -968,6 +1143,27 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Abort if the self-audit or url-purge phases report issues",
     )
+    p.add_argument(
+        "--legal-reviewed",
+        type=str,
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="ISO date of internal legal review (required for ambiguous configurations)",
+    )
+    p.add_argument(
+        "--legal-reviewer",
+        type=str,
+        default=None,
+        metavar='"Name <email>"',
+        help="Reviewer identity recorded in the attestation log",
+    )
+    p.add_argument(
+        "--legal-override",
+        type=str,
+        default=None,
+        metavar='"reason"',
+        help="Documented exception that bypasses a forbidden legal verdict (rare)",
+    )
     args = p.parse_args(argv)
 
     # Propagate the skill root to every subprocess we spawn so companion
@@ -1013,6 +1209,15 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         config_path = args.config.resolve()
+
+        print("\n[1.4] Legal compliance check ...")
+        run_legal_check(
+            ctx, install_dir,
+            legal_reviewed=args.legal_reviewed,
+            legal_reviewer=args.legal_reviewer,
+            legal_override=args.legal_override,
+            dry_run=args.dry_run,
+        )
 
         print("\n[1.5] Probing corporate AI gateway ...")
         run_api_probe(

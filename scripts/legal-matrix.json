@@ -1,0 +1,203 @@
+{
+  "$schema": "./legal-matrix.schema.json",
+  "version": 1,
+  "last_read_date": "2026-05-17",
+  "reverify_after_days": 180,
+  "disclaimer": "Not legal advice. Each corporate deployment requires its own legal review. TOS evolve - re-verify every 6 months.",
+  "status_values": {
+    "allowed": "explicitly supported by CLI vendor AND compatible with backend vendor terms",
+    "forbidden": "defensible reading of vendor terms makes this wiring a breach - launcher MUST refuse",
+    "ambiguous": "terms do not clearly address this configuration - legal review required",
+    "requires-enterprise-license": "allowed only under negotiated commercial/enterprise agreement"
+  },
+  "backends": [
+    "anthropic-api",
+    "bedrock-anthropic",
+    "vertex-anthropic",
+    "foundry-anthropic",
+    "openai",
+    "azure-openai",
+    "vertex-gemini",
+    "ai-studio-gemini",
+    "vertex-non-anthropic-non-google",
+    "litellm-anthropic-only",
+    "litellm-openai-only",
+    "litellm-gemini-only",
+    "litellm-mixed",
+    "self-hosted-oss"
+  ],
+  "matrix": {
+    "claude-code": {
+      "license": "Anthropic proprietary",
+      "anthropic-api": "allowed",
+      "bedrock-anthropic": "allowed",
+      "vertex-anthropic": "allowed",
+      "foundry-anthropic": "allowed",
+      "openai": "forbidden",
+      "azure-openai": "forbidden",
+      "vertex-gemini": "forbidden",
+      "ai-studio-gemini": "forbidden",
+      "vertex-non-anthropic-non-google": "forbidden",
+      "litellm-anthropic-only": "allowed",
+      "litellm-openai-only": "forbidden",
+      "litellm-gemini-only": "forbidden",
+      "litellm-mixed": "ambiguous",
+      "self-hosted-oss": "forbidden"
+    },
+    "codex-cli": {
+      "license": "Apache-2.0",
+      "anthropic-api": "allowed",
+      "bedrock-anthropic": "allowed",
+      "vertex-anthropic": "allowed",
+      "foundry-anthropic": "allowed",
+      "openai": "allowed",
+      "azure-openai": "allowed",
+      "vertex-gemini": "allowed",
+      "ai-studio-gemini": "allowed",
+      "vertex-non-anthropic-non-google": "allowed",
+      "litellm-anthropic-only": "allowed",
+      "litellm-openai-only": "allowed",
+      "litellm-gemini-only": "allowed",
+      "litellm-mixed": "allowed",
+      "self-hosted-oss": "allowed"
+    },
+    "gemini-cli": {
+      "license": "Apache-2.0",
+      "anthropic-api": "ambiguous",
+      "bedrock-anthropic": "ambiguous",
+      "vertex-anthropic": "ambiguous",
+      "foundry-anthropic": "ambiguous",
+      "openai": "ambiguous",
+      "azure-openai": "ambiguous",
+      "vertex-gemini": "allowed",
+      "ai-studio-gemini": "allowed",
+      "vertex-non-anthropic-non-google": "ambiguous",
+      "litellm-anthropic-only": "ambiguous",
+      "litellm-openai-only": "ambiguous",
+      "litellm-gemini-only": "allowed",
+      "litellm-mixed": "ambiguous",
+      "self-hosted-oss": "ambiguous"
+    },
+    "aider": {
+      "license": "Apache-2.0",
+      "anthropic-api": "allowed",
+      "bedrock-anthropic": "allowed",
+      "vertex-anthropic": "allowed",
+      "foundry-anthropic": "allowed",
+      "openai": "allowed",
+      "azure-openai": "allowed",
+      "vertex-gemini": "allowed",
+      "ai-studio-gemini": "allowed",
+      "vertex-non-anthropic-non-google": "allowed",
+      "litellm-anthropic-only": "allowed",
+      "litellm-openai-only": "allowed",
+      "litellm-gemini-only": "allowed",
+      "litellm-mixed": "allowed",
+      "self-hosted-oss": "allowed"
+    },
+    "opencode": {
+      "license": "MIT",
+      "anthropic-api": "allowed",
+      "bedrock-anthropic": "allowed",
+      "vertex-anthropic": "allowed",
+      "foundry-anthropic": "allowed",
+      "openai": "allowed",
+      "azure-openai": "allowed",
+      "vertex-gemini": "allowed",
+      "ai-studio-gemini": "allowed",
+      "vertex-non-anthropic-non-google": "allowed",
+      "litellm-anthropic-only": "allowed",
+      "litellm-openai-only": "allowed",
+      "litellm-gemini-only": "allowed",
+      "litellm-mixed": "allowed",
+      "self-hosted-oss": "allowed"
+    },
+    "continue-dev": {
+      "license": "Apache-2.0",
+      "anthropic-api": "allowed",
+      "bedrock-anthropic": "allowed",
+      "vertex-anthropic": "allowed",
+      "foundry-anthropic": "allowed",
+      "openai": "allowed",
+      "azure-openai": "allowed",
+      "vertex-gemini": "allowed",
+      "ai-studio-gemini": "allowed",
+      "vertex-non-anthropic-non-google": "allowed",
+      "litellm-anthropic-only": "allowed",
+      "litellm-openai-only": "allowed",
+      "litellm-gemini-only": "allowed",
+      "litellm-mixed": "allowed",
+      "self-hosted-oss": "allowed"
+    },
+    "cline": {
+      "license": "Apache-2.0",
+      "anthropic-api": "allowed",
+      "bedrock-anthropic": "allowed",
+      "vertex-anthropic": "allowed",
+      "foundry-anthropic": "allowed",
+      "openai": "allowed",
+      "azure-openai": "allowed",
+      "vertex-gemini": "allowed",
+      "ai-studio-gemini": "allowed",
+      "vertex-non-anthropic-non-google": "allowed",
+      "litellm-anthropic-only": "allowed",
+      "litellm-openai-only": "allowed",
+      "litellm-gemini-only": "allowed",
+      "litellm-mixed": "allowed",
+      "self-hosted-oss": "allowed"
+    }
+  },
+  "rationale": {
+    "claude-code:openai": "Anthropic Commercial Terms Section D.4 (Use Restrictions) forbids accessing Services to build a competing product or service. Routing the Anthropic-branded Claude Code CLI to OpenAI is the textbook 'competing services' configuration. Source: https://www.anthropic.com/legal/commercial-terms (read 2026-05-17). Reinforced by Aug 2025 incident where Anthropic revoked OpenAI's Claude API access citing this exact clause.",
+    "claude-code:azure-openai": "Same as claude-code:openai. Azure-hosted OpenAI is still an OpenAI model, still a competing model provider per Anthropic Commercial Terms Section D.4. Source: https://www.anthropic.com/legal/commercial-terms (read 2026-05-17).",
+    "claude-code:vertex-gemini": "Anthropic Commercial Terms Section D.4 forbids using Claude Code to build competing products. Vertex-hosted Gemini is a Google-published competing model. Officially supported Vertex configuration for Claude Code (per code.claude.com/docs/en/third-party-integrations, read 2026-05-17) is Vertex-Anthropic only. Source: https://www.anthropic.com/legal/commercial-terms.",
+    "claude-code:ai-studio-gemini": "Same as claude-code:vertex-gemini. AI Studio is the consumer Gemini endpoint - still a competing model provider. Source: https://www.anthropic.com/legal/commercial-terms (read 2026-05-17).",
+    "claude-code:vertex-non-anthropic-non-google": "Vertex Model Garden partners other than Anthropic (Mistral, Llama, etc.) are non-Anthropic models. Anthropic Commercial Terms Section D.4 applies. Source: https://www.anthropic.com/legal/commercial-terms (read 2026-05-17).",
+    "claude-code:litellm-openai-only": "LiteLLM gateway pointed exclusively at OpenAI is functionally Claude Code -> OpenAI. Same Section D.4 breach. Source: https://www.anthropic.com/legal/commercial-terms (read 2026-05-17).",
+    "claude-code:litellm-gemini-only": "Same reasoning as claude-code:litellm-openai-only.",
+    "claude-code:litellm-mixed": "Ambiguous: a LiteLLM gateway that routes only to Anthropic-hosted models is allowed (equivalent to ANTHROPIC_BASE_URL pointing at the gateway). A gateway that mixes backends and may fail over to OpenAI/Gemini becomes a Section D.4 breach the moment a non-Anthropic completion is returned. Legal review required; launcher should require explicit declaration that the gateway is Anthropic-only. Source: https://www.anthropic.com/legal/commercial-terms (read 2026-05-17).",
+    "claude-code:self-hosted-oss": "Self-hosted Llama/Mistral/etc. are non-Anthropic models. Anthropic Commercial Terms Section D.4 forbids using Claude Code (an Anthropic-branded product) to build services around competing models. Source: https://www.anthropic.com/legal/commercial-terms (read 2026-05-17).",
+    "gemini-cli:any-non-gemini": "No explicit forbidding clause in current Google Cloud terms (https://cloud.google.com/terms/, read 2026-05-17). Legacy Generative AI Terms (https://policies.google.com/terms/generative-ai, Aug 2023) said 'You may not use the Services to develop machine learning models or related technology' but were superseded May 2024. Gemini CLI documentation focuses exclusively on Gemini models. Streaming protocol incompatibility documented in github.com/google-gemini/gemini-cli issue #25579 - workarounds exist (LiteLLM PR #12246) but are not officially supported by Google. Vertex-Anthropic routing additionally inherits Anthropic's reseller policy from docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-partner-models. Legal review required for any production commercial deployment of Gemini CLI with a non-Gemini backend.",
+    "codex-cli:non-openai": "Codex CLI is Apache-2.0 licensed (https://github.com/openai/codex/blob/main/LICENSE, read 2026-05-17). OpenAI has accepted upstream PRs adding Anthropic and other backends. The OpenAI Services Agreement restriction on 'using Output to develop competing models' applies only when OpenAI Output is generated - pointing the CLI at Anthropic generates no OpenAI Output and is upstream-supported. Source: https://openai.com/policies/services-agreement/ (cross-checked via secondary sources, read 2026-05-17).",
+    "oss-clis:any-backend": "Aider (Apache-2.0), opencode (MIT), Continue.dev (Apache-2.0), and Cline (Apache-2.0) impose no restriction on backend choice. Risk transfers entirely to the backend vendor's terms - e.g. wiring Aider to Anthropic API does NOT exempt the user from Anthropic Commercial Terms Section D.4 applied to that backend session. Verified by reading each project's LICENSE on 2026-05-17."
+  },
+  "audit_requirements": {
+    "claude-code": {
+      "logs_clause": "Commercial Terms Section D.2 requires cooperation with 'reasonable requests for information from Anthropic to support compliance'. No dedicated logging mandate.",
+      "training_clause": "Anthropic does not train on Customer Content per Commercial Terms (confirmed for Bedrock deployment via secondary source 2026-05-17)."
+    },
+    "openai": {
+      "logs_clause": "OpenAI logs API usage server-side. Enterprise Agreement typically adds zero-retention option.",
+      "training_clause": "API customers can opt out of training (default for Business/Enterprise)."
+    },
+    "google-vertex": {
+      "logs_clause": "GCP Terms Section 4.3: Google may log prompts when automated abuse tooling fires.",
+      "training_clause": "Vertex AI customer prompts and responses are not shared with third-parties (per docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-partner-models, read 2026-05-17)."
+    }
+  },
+  "license_tiers": {
+    "claude-code": {
+      "personal": "Claude.ai Consumer Terms (https://www.anthropic.com/legal/consumer-terms)",
+      "commercial": "Anthropic Commercial Terms (https://www.anthropic.com/legal/commercial-terms)",
+      "enterprise": "Claude for Teams / Enterprise plans - adds SSO, managed permissions, compliance API. Does NOT relax the competing-models restriction in Section D.4."
+    },
+    "codex-cli": {
+      "personal": "OpenAI Consumer Terms of Use",
+      "commercial": "OpenAI Business Terms / Services Agreement",
+      "enterprise": "OpenAI Enterprise Agreement - typically adds zero-retention, custom DPA"
+    },
+    "gemini-cli": {
+      "personal": "Google AI Studio (free tier, prohibits regulated workloads)",
+      "commercial": "Vertex AI via GCP Terms of Service",
+      "enterprise": "Custom GCP enterprise agreement"
+    }
+  },
+  "operational_rules": [
+    "Launcher MUST read this file at generation time.",
+    "For status=forbidden: refuse to generate, emit citation from rationale.<cli>:<backend>.",
+    "For status=ambiguous: block by default; allow only with --legal-reviewed=YYYY-MM-DD --legal-reviewer flag, record in audit log.",
+    "For status=allowed: proceed.",
+    "Stamp every generated launcher bundle with last_read_date.",
+    "Refuse generation if (today - last_read_date) > reverify_after_days."
+  ]
+}
