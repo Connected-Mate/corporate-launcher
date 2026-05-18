@@ -2,9 +2,9 @@
 
 <img src="assets/hero.png" alt="Corporate Launcher — Create & launch AI code agents in your company" width="100%" />
 
-# Corporate Launcher
+# Corporate AI Launcher
 
-### Create your Corporate AI Launcher
+### Create your personalized Corporate AI coding Launcher
 
 **Turn any public AI coding CLI into your company's internal, audit-grade, white-labeled launcher — in one structured interview.**
 
