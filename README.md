@@ -6,7 +6,11 @@
 
 ### Create your personalized Corporate AI coding Launcher
 
-**Turn any public AI coding CLI into your company's internal, audit-grade, white-labeled launcher — in one structured interview.**
+**Build the bridge between your company's internal AI gateway and the public AI coding agents your developers want to use (Claude Code, Codex, Gemini, Cursor, Cline, Aider, opencode, Continue.dev).**
+
+*One structured interview → a branded, audit-grade, legally-compliant launcher that routes every prompt through **your** enterprise AI infrastructure, hides the underlying vendor, applies your cyber rules + dev rules, tracks cost, and ships to your team.*
+
+*You already have an enterprise AI (Bedrock, Azure OpenAI, Vertex, LiteLLM, internal gateway). Your developers already want Claude Code / Codex / Gemini. This skill is the missing wrapper — generated, not hand-coded.*
 
 [Who is this for](#who-is-this-for) · [Goals](#goals) · [Core features](#core-features) · [Install](#install) · [How it works](#how-it-works) · [Cost tracking](#cost-tracking) · [Distribution](#distribution) · [FAQ](#faq) · [A word from the creator](#a-word-from-the-creator)
 
@@ -16,11 +20,67 @@
 
 ---
 
-## The one-line summary
+## The problem this solves
 
-**Corporate Launcher is a skill that asks a creator ~30 questions and emits a complete, audit-ready, branded wrapper around a public AI coding CLI — plus everything needed to ship it to a team and survive a security review.**
+Your company has invested in an **internal AI infrastructure** — a corporate gateway in front of AWS Bedrock, Azure OpenAI, Vertex AI, or LiteLLM. Routed through the corporate VPN, behind SSO, logged for compliance, with the contracted models and the negotiated prices.
 
-It works the same way from 5 AI hosts (Claude Code, Codex CLI, Gemini CLI, Cursor, Cline), targets 7 wrappable CLIs, applies 15 cyber controls per OWASP / ANSSI, runs 30+ post-render audits, ships a compliance Word doc for the RSSI/CISO/DPO, and tracks cost end-to-end through every launcher it generates.
+Your developers want **AI coding agents** — Claude Code, Codex CLI, Gemini CLI, Cursor, Cline. The agents in the news, the ones with the best DX, the ones their friends at less-regulated companies are using.
+
+But the two don't talk to each other out of the box. The public CLIs default to vendor endpoints. They send prompts off-host. They have the wrong brand. They aren't legally compatible with arbitrary backends. They don't know your company's coding rules. They don't track cost the way Finance needs.
+
+So either:
+- developers go without (productivity tax),
+- or someone in your platform team hand-builds a wrapper (3-quarter project that rots the day the CLI updates),
+- or shadow IT happens (compliance time bomb).
+
+**This skill is the third option, productised.** A structured interview, then a generated wrapper that:
+
+- routes every prompt through **your** corporate AI gateway (Bedrock / Azure OpenAI / Vertex / LiteLLM)
+- hides the underlying vendor behind **your** brand (`acme-copilot`, `bnp-helper`, …)
+- applies your **15 cyber controls + corporate dev rules** to every session
+- **refuses** legally non-compliant configurations (e.g. Claude Code → OpenAI breaches Anthropic §D.4)
+- tracks **cost** end-to-end, per session / day / model, and pushes to your FinOps dashboard
+- ships to your team as a **git repo, tarball, or one-liner install URL**
+- arrives with a **compliance .docx** ready for the RSSI/CISO/DPO
+
+In short: a generator for the wrapper your platform team would have built — minus 3 quarters of effort, plus the audit trail.
+
+```
+        ┌──────────────────────────────────┐
+        │  Your developers want to use:    │
+        │                                  │
+        │  Claude Code · Codex · Gemini    │
+        │  Cursor · Cline · Aider          │
+        │  opencode · Continue.dev         │
+        └──────────────┬───────────────────┘
+                       │ but they default to public vendor endpoints,
+                       │ leak prompts, ignore your gateway, and may
+                       │ be legally incompatible with your backend.
+                       ▼
+        ┌──────────────────────────────────┐
+        │   CORPORATE AI LAUNCHER          │
+        │   ════════════════════           │
+        │                                  │
+        │   • white-label wrapper          │
+        │   • 15 cyber controls            │
+        │   • your dev rules               │
+        │   • legal-compatibility gate     │
+        │   • cost tracking + FinOps push  │
+        │   • compliance .docx             │
+        └──────────────┬───────────────────┘
+                       │ routes 100% of traffic through:
+                       ▼
+        ┌──────────────────────────────────┐
+        │  Your corporate AI infrastructure│
+        │                                  │
+        │  AWS Bedrock · Azure OpenAI      │
+        │  Vertex AI · LiteLLM · custom    │
+        │  ────────────────────────────    │
+        │  behind VPN, SSO, custom CA,     │
+        │  with contracted models &        │
+        │  negotiated prices               │
+        └──────────────────────────────────┘
+```
 
 ---
 
